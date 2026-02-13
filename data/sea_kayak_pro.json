@@ -1,0 +1,105 @@
+{
+  "metadata": {
+    "name": "Sea Kayak Pro",
+    "description": "High-performance sea kayak with excellent stability",
+    "units": "metric",
+    "target_waterline": 0.1,
+    "target_payload": 100.0
+  },
+  "profiles": [
+    {
+      "station": 0.0,
+      "port_points": [
+        {
+          "y": 0.0,
+          "z": 0.3
+        }
+      ]
+    },
+    {
+      "station": 1.0,
+      "port_points": [
+        {
+          "y": 0.0,
+          "z": 0.3
+        },
+        {
+          "y": 0.18,
+          "z": 0.28
+        },
+        {
+          "y": 0.12,
+          "z": 0.15
+        },
+        {
+          "y": 0.09,
+          "z": 0.05
+        },
+        {
+          "y": 0.0,
+          "z": 0.0
+        }
+      ]
+    },
+    {
+      "station": 3.0,
+      "port_points": [
+        {
+          "y": 0.0,
+          "z": 0.3
+        },
+        {
+          "y": 0.3,
+          "z": 0.28
+        },
+        {
+          "y": 0.2,
+          "z": 0.15
+        },
+        {
+          "y": 0.15,
+          "z": 0.05
+        },
+        {
+          "y": 0.0,
+          "z": 0.0
+        }
+      ]
+    },
+    {
+      "station": 4.0,
+      "port_points": [
+        {
+          "y": 0.0,
+          "z": 0.35
+        },
+        {
+          "y": 0.28,
+          "z": 0.28
+        },
+        {
+          "y": 0.18,
+          "z": 0.15
+        },
+        {
+          "y": 0.12,
+          "z": 0.05
+        },
+        {
+          "y": 0.0,
+          "z": 0.0
+        }
+      ]
+    },
+    {
+      "station": 5.0,
+      "port_points": [
+        {
+          "y": 0.0,
+          "z": 0.3
+        }
+      ]
+    }
+  ],
+  "file_name": "data/sea_kayak_pro.json"
+}

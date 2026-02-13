@@ -112,7 +112,7 @@ Close to the bow or the stern the definition can include other profiles with onl
     },
     {
       "station": 1.0,
-      "points": [
+      "port_points": [
         {"y": 0.00, "z": 0.30},
         {"y": 0.18, "z": 0.28},
         {"y": 0.12, "z": 0.15},
@@ -122,7 +122,7 @@ Close to the bow or the stern the definition can include other profiles with onl
     },
     {
       "station": 3.0,
-      "points": [
+      "port_points": [
         {"y": 0.00, "z": 0.30},
         {"y": 0.30, "z": 0.28},
         {"y": 0.20, "z": 0.15},
@@ -132,7 +132,7 @@ Close to the bow or the stern the definition can include other profiles with onl
     },
     {
       "station": 4.0,
-      "points": [
+      "port_points": [
         {"y": 0.00, "z": 0.35},
         {"y": 0.28, "z": 0.28},
         {"y": 0.18, "z": 0.15},

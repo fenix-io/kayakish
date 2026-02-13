@@ -26,3 +26,4 @@ sphinx-autodoc-typehints>=3.5.0
 
 # Optional: Data handling and analysis
 # pandas>=2.0.0
+scipy>=1.16.3

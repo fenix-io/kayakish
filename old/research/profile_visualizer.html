@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kayak Profile Visualizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+        }
+        label {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        input, select {
+            margin-right: 20px;
+            padding: 5px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #canvasContainer {
+            text-align: center;
+            margin-top: 20px;
+        }
+        canvas {
+            border: 2px solid #333;
+            background-color: #fff;
+        }
+        .legend {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+        }
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        .color-box {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            vertical-align: middle;
+            border: 1px solid #333;
+        }
+        #info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e8f4f8;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kayak Profile 2D Visualizer</h1>
+        
+        <div id="controls">
+            <label for="fileInput">Load Profile JSON:</label>
+            <input type="file" id="fileInput" accept=".json">
+            
+            <label for="profileSelect">Profile:</label>
+            <select id="profileSelect">
+                <option value="0">Profile 0</option>
+            </select>
+            
+            <button onclick="loadProfile()">Load Profile</button>
+            <button onclick="toggleDataPoints()">Toggle Data Points</button>
+            <button onclick="toggleInterpolated()">Toggle Interpolated</button>
+        </div>
+        
+        <div id="canvasContainer">
+            <canvas id="profileCanvas" width="800" height="600"></canvas>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <span class="color-box" style="background-color: #ff0000;"></span>
+                <span>Original Data Points</span>
+            </div>
+            <div class="legend-item">
+                <span class="color-box" style="background-color: #0000ff;"></span>
+                <span>Interpolated Points</span>
+            </div>
+            <div class="legend-item">
+                <span class="color-box" style="background-color: #00ff00;"></span>
+                <span>Center Point</span>
+            </div>
+        </div>
+        
+        <div id="info">
+            <strong>Instructions:</strong> Load a JSON file containing profile data or use the sample data below.
+            The visualization shows the cross-section of the kayak hull at a specific station (y-z plane).
+        </div>
+    </div>
+
+    <script>
+        let profileData = null;
+        let showDataPoints = true;
+        let showInterpolated = true;
+        
+        // Canvas and context
+        const canvas = document.getElementById('profileCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Sample data structure for testing
+        const sampleData = {
+            "station": 3.0,
+            "center": {"x": 3.0, "y": 0.0, "z": 0.15},
+            "data_points": [
+                {"x": 3.0, "y": 0.0, "z": 0.3},
+                {"x": 3.0, "y": 0.25, "z": 0.28},
+                {"x": 3.0, "y": 0.21, "z": 0.15},
+                {"x": 3.0, "y": 0.15, "z": 0.05},
+                {"x": 3.0, "y": 0.0, "z": 0.0}
+            ],
+            "points": [
+                {"x": 3.0, "y": 0.0, "z": 0.3},
+                {"x": 3.0, "y": 0.05, "z": 0.29},
+                {"x": 3.0, "y": 0.1, "z": 0.27},
+                {"x": 3.0, "y": 0.15, "z": 0.24},
+                {"x": 3.0, "y": 0.2, "z": 0.2},
+                {"x": 3.0, "y": 0.22, "z": 0.15},
+                {"x": 3.0, "y": 0.18, "z": 0.1},
+                {"x": 3.0, "y": 0.12, "z": 0.05},
+                {"x": 3.0, "y": 0.0, "z": 0.0}
+            ]
+        };
+        
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            console.log(file);
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    profileData = data;
+                    updateProfileSelect(data);
+                    loadProfile();
+                } catch (error) {
+                    alert('Error parsing JSON file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        function updateProfileSelect(data) {
+            const select = document.getElementById('profileSelect');
+            select.innerHTML = '';
+            
+            if (data.profiles && Array.isArray(data.profiles)) {
+                data.profiles.forEach((profile, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `Profile ${index} (Station: ${profile.station})`;
+                    select.appendChild(option);
+                });
+            }
+        }
+        
+        function loadProfile() {
+            // Use sample data if no file loaded
+            let profile;
+            
+            if (profileData && profileData.profiles) {
+                const index = parseInt(document.getElementById('profileSelect').value);
+                profile = profileData.profiles[index];
+            } else {
+                profile = sampleData;
+            }
+            
+            drawProfile(profile);
+        }
+        
+        function toggleDataPoints() {
+            showDataPoints = !showDataPoints;
+            loadProfile ();
+        }
+        
+        function toggleInterpolated() {
+            showInterpolated = !showInterpolated;
+            loadProfile();
+        }
+        
+        function drawProfile(profile) {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Get all points to determine bounds
+            let allPoints = [];
+            if (profile.data_points) {
+                allPoints = allPoints.concat(profile.data_points);
+            }
+            if (profile.points) {
+                allPoints = allPoints.concat(profile.points);
+            }
+            
+            if (allPoints.length === 0) {
+                ctx.fillText('No points to display', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+            
+            // Find bounds
+            let minY = Math.min(...allPoints.map(p => p.y));
+            let maxY = Math.max(...allPoints.map(p => p.y));
+            let minZ = Math.min(...allPoints.map(p => p.z));
+            let maxZ = Math.max(...allPoints.map(p => p.z));
+            
+            // Add padding
+            const padding = 50;
+            const yRange = maxY - minY;
+            const zRange = maxZ - minZ;
+            const yPadding = yRange * 0.1;
+            const zPadding = zRange * 0.1;
+            
+            minY -= yPadding;
+            maxY += yPadding;
+            minZ -= zPadding;
+            maxZ += zPadding;
+            
+            // Coordinate transformation functions
+            function toCanvasX(y) {
+                // Y coordinate maps to canvas X (horizontal)
+                return padding + ((y - minY) / (maxY - minY)) * (canvas.width - 2 * padding);
+            }
+            
+            function toCanvasY(z) {
+                // Z coordinate maps to canvas Y (vertical, inverted)
+                return canvas.height - padding - ((z - minZ) / (maxZ - minZ)) * (canvas.height - 2 * padding);
+            }
+            
+            // Draw grid
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            
+            // Vertical grid lines
+            for (let i = 0; i <= 10; i++) {
+                const y = minY + (maxY - minY) * i / 10;
+                const x = toCanvasX(y);
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.moveTo(x, canvas.height - padding);
+                ctx.stroke();
+            }
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= 10; i++) {
+                const z = minZ + (maxZ - minZ) * i / 10;
+                const y = toCanvasY(z);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(canvas.width - padding, y);
+                ctx.stroke();
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            
+            // Y axis (centerline)
+            const centerX = toCanvasX(0);
+            ctx.beginPath();
+            ctx.moveTo(centerX, padding);
+            ctx.lineTo(centerX, canvas.height - padding);
+            ctx.stroke();
+            
+            // Z axis (baseline)
+            const baselineY = toCanvasY(0);
+            ctx.beginPath();
+            ctx.moveTo(padding, baselineY);
+            ctx.lineTo(canvas.width - padding, baselineY);
+            ctx.stroke();
+            
+            // Draw axis labels
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Arial';
+            ctx.fillText('Y (Port +)', canvas.width - padding - 60, canvas.height - padding + 20);
+            ctx.fillText('Z (Up)', padding - 40, padding - 10);
+            
+            // Draw interpolated points and lines (blue)
+            if (showInterpolated && profile.points && profile.points.length > 0) {
+                ctx.strokeStyle = '#0000ff';
+                ctx.fillStyle = '#0000ff';
+                ctx.lineWidth = 2;
+                
+                ctx.beginPath();
+                const firstPoint = profile.points[0];
+                ctx.moveTo(toCanvasX(firstPoint.y), toCanvasY(firstPoint.z));
+                let l = profile.points.length;
+                for (let i = 1; i < l + 1; i++) {
+                    const point = profile.points[i % l];
+                    ctx.lineTo(toCanvasX(point.y), toCanvasY(point.z));
+                }
+                ctx.stroke();
+                
+                // Draw points
+                profile.points.forEach(point => {
+                    ctx.beginPath();
+                    ctx.arc(toCanvasX(point.y), toCanvasY(point.z), 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            }
+            
+            // Draw original data points (red)
+            if (showDataPoints && profile.data_points && profile.data_points.length > 0) {
+                ctx.strokeStyle = '#ff0000';
+                ctx.fillStyle = '#ff0000';
+                ctx.lineWidth = 2;
+                
+                // Draw lines between data points
+                ctx.beginPath();
+                const firstPoint = profile.data_points[0];
+                ctx.moveTo(toCanvasX(firstPoint.y), toCanvasY(firstPoint.z));
+                const dpl = profile.data_points.length;
+                for (let i = 1; i < dpl + 1; i++) {
+                    const point = profile.data_points[i % dpl];
+                    ctx.lineTo(toCanvasX(point.y), toCanvasY(point.z));
+                }
+                ctx.stroke();
+                
+                // Draw data points as larger circles
+                profile.data_points.forEach(point => {
+                    ctx.beginPath();
+                    ctx.arc(toCanvasX(point.y), toCanvasY(point.z), 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            }
+            
+            // Draw center point (green)
+            if (profile.center) {
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.arc(toCanvasX(profile.center.y), toCanvasY(profile.center.z), 6, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Draw cross at center
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 2;
+                const cx = toCanvasX(profile.center.y);
+                const cy = toCanvasY(profile.center.z);
+                ctx.beginPath();
+                ctx.moveTo(cx - 10, cy);
+                ctx.lineTo(cx + 10, cy);
+                ctx.moveTo(cx, cy - 10);
+                ctx.lineTo(cx, cy + 10);
+                ctx.stroke();
+            }
+            
+            // Draw station info
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(`Station: ${profile.station}`, 10, 20);
+        }
+        
+        // Load sample data on page load
+        window.onload = function() {
+            drawProfile(sampleData);
+        };
+    </script>
+</body>
+</html>
