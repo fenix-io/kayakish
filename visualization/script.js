@@ -1681,8 +1681,10 @@ function drawProfile() {
     // Calculate scale for each dimension and use the most restrictive
     const scaleY = drawWidth / rangeY;
     const scaleZ = drawHeight / rangeZ;
-    const scale = Math.min(scaleY, scaleZ) * 0.85;
-    
+    const scale = Math.min(scaleY, scaleZ) * 0.50;
+    console.log(`Canvas size: ${drawWidth}x${drawHeight}`);
+    console.log(`Range: Y=${rangeY}, Z=${rangeZ}`);
+    console.log(`Drawing with scale: ${scale}, scaleY: ${scaleY}, scaleZ: ${scaleZ}`);
     // Center the drawing
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
@@ -1819,15 +1821,22 @@ function drawHullSideView() {
     const scaleZ = drawHeight / rangeZ;
     const scale = Math.min(scaleX, scaleZ) * 0.96;
     
-    console.log(`Range: X=${rangeX}, Z=${rangeZ}`);
-    console.log(`Canvas: ${drawWidth}x${drawHeight}`);
-    console.log(`Scale: ${scale.toFixed(2)}`);
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    
+    // Helper function to convert profile coords to canvas coords
+    function toCanvas(y, z) {
+        return {
+            x: centerX + (y - (minY + maxY) / 2) * scale,
+            y: centerY - (z - (minZ + maxZ) / 2) * scale
+        };
+    }    
 
     // Helper function to convert coords to canvas coords
     function toCanvas(x, z) {
         return {
-            x: padding + (x - minX) * scale,
-            y: canvas.height - padding - (z - minZ) * scale
+            x: centerX + padding + ((x - (rangeX / 2)) * scale),
+            y: centerY - padding - ((z - (rangeZ / 2)) * scale)
         };
     }
     

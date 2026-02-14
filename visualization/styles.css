@@ -852,6 +852,7 @@ h3 {
     border-radius: 5px;
     padding: 10px;
     background-color: white;
+    overflow-y: scroll;
 }
 
 .hull-side-view-container {
@@ -862,6 +863,7 @@ h3 {
     border-radius: 5px;
     padding: 10px;
     background-color: white;
+    overflow-y: scroll;
 }
 
 .profile-view-container {
