@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 from src.geometry.hull import Hull, read_file
 from src.geometry.point import Point3D
@@ -39,12 +40,14 @@ def calculate_combined_cg(
     return Point3D(cg_x, cg_y, cg_z)
 
 
-def create_stability_curve(
+def create_stability_curve_points(
     hull: Hull,
-    payload_cg_z: float = 0.36,
+    paddler_cg_z: float = 0.25,
+    paddler_weight: float = None,
+    hull_weight: float = None,
     max_angle: float = 90,
-    step: float = 5,
-) -> list[dict]:
+    step: float = 3,
+) -> Tuple[float, float, float, list[dict]]:
     """Calculate stability curve (GZ curve) for a hull with payload.
 
     The righting arm GZ is the horizontal distance between:
@@ -67,19 +70,19 @@ def create_stability_curve(
     Returns:
         List of dicts with angle, GZ, moment, CB position, etc.
     """
-    hull_weight = hull.target_weight
-    payload_weight = hull.target_payload
-    total_weight = hull_weight + payload_weight
+    hull_weight = hull_weight or hull.target_weight
+    paddler_weight = paddler_weight or hull.target_payload
+    total_weight = hull_weight  + paddler_weight
 
     # Calculate combined CG
     combined_cg = calculate_combined_cg(
-        hull_weight, hull.cg, payload_weight, payload_cg_z
+        hull_weight, hull.cg, paddler_weight, paddler_cg_z
     )
 
     print(f"Hull CG:     x={hull.cg.x:.3f}, y={hull.cg.y:.3f}, z={hull.cg.z:.3f} m")
-    print(f"Payload CG:  x={hull.cg.x:.3f}, y=0.000, z={payload_cg_z:.3f} m")
+    print(f"Paddler CG:  x={hull.cg.x:.3f}, y=0.000, z={paddler_cg_z:.3f} m")
     print(f"Combined CG: x={combined_cg.x:.3f}, y={combined_cg.y:.3f}, z={combined_cg.z:.3f} m")
-    print(f"Hull weight: {hull_weight} kg, Payload: {payload_weight} kg, Total: {total_weight} kg")
+    print(f"Hull weight: {hull_weight} kg, Paddler: {paddler_weight} kg, Total: {total_weight} kg")
     print()
 
     stability_points = []
@@ -141,6 +144,8 @@ def create_stability_curve(
 
     # Find angle of vanishing stability (where GZ becomes negative)
     vanishing_angle = None
+    max_moment = 0.0
+    max_moment_angle = 0.0
     for i in range(1, len(stability_points)):
         if stability_points[i]["gz"] < 0 and stability_points[i - 1]["gz"] >= 0:
             # Linear interpolation to find exact angle
@@ -150,7 +155,10 @@ def create_stability_curve(
             a2 = stability_points[i]["angle"]
             vanishing_angle = a1 + (0 - gz1) * (a2 - a1) / (gz2 - gz1)
             break
-
+        if stability_points[i]["moment"] > max_moment:
+            max_moment = stability_points[i]["moment"]
+            max_moment_angle = stability_points[i]["angle"]
+            
     if vanishing_angle:
         print(f"\n⚠️  Angle of vanishing stability: {vanishing_angle:.1f}°")
     else:
@@ -159,8 +167,9 @@ def create_stability_curve(
     # Find maximum GZ and its angle
     max_gz_point = max(stability_points, key=lambda p: p["gz"])
     print(f"Maximum GZ: {max_gz_point['gz']:.4f}m at {max_gz_point['angle']:.1f}°")
+    print(f"Maximum Righting Moment: {max_moment:.1f} N·m at {max_moment_angle:.1f}°")
 
-    return stability_points
+    return vanishing_angle, max_moment, max_moment_angle, stability_points
 
 
 def plot_stability_curve(stability_points: list[dict], hull_name: str = "Hull"):
@@ -212,7 +221,7 @@ if __name__ == "__main__":
     data = read_file(file_path)
 
     hull = Hull()
-    hull.initialize(data)
+    hull.build(data)
 
     print(f"Hull Name: {hull.name}")
     print(f"Hull Beam: {hull.beam():.3f} m")
@@ -229,7 +238,7 @@ if __name__ == "__main__":
     print("=" * 70)
 
     stability_curve = create_stability_curve(
-        hull, payload_cg_z=payload_cg_z, max_angle=90, step=5
+        hull, paddler_cg_z=payload_cg_z, max_angle=90, step=5
     )
 
     print("\n" + "=" * 70)

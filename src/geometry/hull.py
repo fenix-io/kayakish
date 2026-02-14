@@ -13,9 +13,9 @@ class Hull:
     target_weight: float | None = None
     target_payload: float | None = None
     waterline: float | None = None
-
-    curves: list[Spline3D] = []     
-    # profiles: list[Profile] = []
+    file_name: str | None = None
+    curves: list[Spline3D] = []
+    profiles: list[Profile] = []     
     
     def __init__(self):
        pass
@@ -35,13 +35,46 @@ class Hull:
     def depth(self):
         return self.max_z - self.min_z
 
-    def initialize(self, data: dict):
-        self.name = data.get("metadata", {}).get("name", "KAYAK HULL")
-        self.description = data.get("metadata", {}).get("description", "KAYAK HULL")
-        self.units = data.get("metadata", {}).get("units", "metric")
-        self.target_waterline = data.get("metadata", {}).get("target_waterline", 0.1)
-        self.target_weight = data.get("metadata", {}).get("target_weight", 100)
-        self.target_payload = data.get("metadata", {}).get("target_payload", 100)
+    def initialize_from_data(self, data: dict):
+        self.name = data.get("name", "KAYAK HULL")
+        self.description = data.get("description", "KAYAK HULL")
+        self.units = data.get("units", "metric")
+        self.target_waterline = data.get("target_waterline", 0.1)
+        self.target_weight = data.get("target_weight", 100)
+        self.target_payload = data.get("target_payload", 100)
+        self.volume = data.get("volume", 0.0)
+        if data.get("cg"):
+            self.cg = Point3D(data["cg"][0], data["cg"][1], data["cg"][2])
+        else:
+            self.cg = None
+        self.waterline = data.get("waterline", 0.0)
+        if data.get("cb"):
+            self.cb = Point3D(data["cb"][0], data["cb"][1], data["cb"][2])
+        else:
+            self.cb = None
+        self.displacement = data.get("displacement", 0.0)
+        self.min_x = data.get("min_x", 0.0)
+        self.max_x = data.get("max_x", 0.0)
+        self.min_y = data.get("min_y", 0.0)
+        self.max_y = data.get("max_y", 0.0)
+        self.min_z = data.get("min_z", 0.0)
+        self.max_z = data.get("max_z", 0.0)
+        for curve_data in data.get("curves", []):
+            name = curve_data.get("name", "Unnamed Curve")
+            points = [Point3D(p[0], p[1], p[2]) for p in curve_data.get("points", [])]
+            self._add_spline(Spline3D(name, points))
+        for profile_data in data.get("profiles", []):
+            station = profile_data.get("station", 0.0)
+            points = [Point3D(p[0], p[1], p[2]) for p in profile_data.get("points", [])]
+            self.profiles.append(Profile(station, points))
+
+    def build(self, data: dict):
+        self.name = data.get("name", "KAYAK HULL")
+        self.description = data.get("description", "KAYAK HULL")
+        self.units = data.get("units", "metric")
+        self.target_waterline = data.get("target_waterline", 0.1)
+        self.target_weight = data.get("target_weight", 100)
+        self.target_payload = data.get("target_payload", 100)
 
         self.min_x = float('inf')
         self.max_x = float('-inf')
@@ -83,7 +116,7 @@ class Hull:
             
     def _calculate_profiles_volume_and_cg(self):
         x = self.min_x
-        step = 0.01
+        step = 0.05
         profiles = []
         volumes = []
         cgs = []
@@ -98,6 +131,8 @@ class Hull:
                         volumes.append(volume)
                         cgs.append(cg)
             x += step
+        
+        self.profiles = profiles  # Store profiles for potential visualization or further analysis
             
         # Calculate total volume
         volume = sum(volumes)
@@ -149,7 +184,7 @@ class Hull:
  
         while 0 < waterline and waterline <= self.depth():
             x = self.min_x
-            step = 0.01
+            step = 0.05
             profiles = []
             volumes = []
             cgs = []
@@ -277,7 +312,7 @@ if __name__ == "__main__":
     # pprint(data)
 
     hull = Hull()
-    hull.initialize(data)    
+    hull.build(data)    
     print(f"Hull Name: {hull.name}")
     print(f"Hull Description: {hull.description}")
     print(f"Hull Units: {hull.units}")
