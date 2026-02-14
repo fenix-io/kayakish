@@ -58,25 +58,23 @@ def create_hull(hull_model: CreateHullModel) -> HullModel:
     else:
         hull = Hull()
         hull.build(hull_model.model_dump())
-        print(f"Hull Name: {hull.name}")
-        print(f"Hull Description: {hull.description}")
-        print(f"Hull Units: {hull.units}")
-        print(f"Hull Target Waterline: {hull.target_waterline}")
-        print(f"Hull Target Weight: {hull.target_weight}")
-        print(f"Hull Target Payload: {hull.target_payload}")
-        print(f"Hull Length: {hull.length():.3f} m")
-        print(f"Hull Beam: {hull.beam():.3f} m")
-        print(f"Hull Depth: {hull.depth():.3f} m")  
-        print(f"Hull Volume: {hull.volume:.6f} m³")
-        print(f"Hull Center of Gravity: {hull.cg}")
-        print(f"Hull Waterline: {hull.waterline:.3f} m")
-        print(f"Hull Center of Buoyancy: {hull.cb}")
-        print(f"Hull Displacement: {hull.displacement:.2f} kg")
+        # print(f"Hull Name: {hull.name}")
+        # print(f"Hull Description: {hull.description}")
+        # print(f"Hull Target Waterline: {hull.target_waterline}")
+        # print(f"Hull Target Weight: {hull.target_weight}")
+        # print(f"Hull Target Payload: {hull.target_payload}")
+        # print(f"Hull Length: {hull.length():.3f} m")
+        # print(f"Hull Beam: {hull.beam():.3f} m")
+        # print(f"Hull Depth: {hull.depth():.3f} m")  
+        # print(f"Hull Volume: {hull.volume:.6f} m³")
+        # print(f"Hull Center of Gravity: {hull.cg}")
+        # print(f"Hull Waterline: {hull.waterline:.3f} m")
+        # print(f"Hull Center of Buoyancy: {hull.cb}")
+        # print(f"Hull Displacement: {hull.displacement:.2f} kg")
         
         result = HullModel()
         result.name = hull.name
         result.description = hull.description
-        result.units = hull.units
         result.target_waterline = hull.target_waterline
         result.target_weight = hull.target_weight
         result.target_payload = hull.target_payload
@@ -125,25 +123,23 @@ def update_hull(hull_name: str, hull_model: CreateHullModel) -> HullModel:
     # prep_file_path = Path("data") / f"{safe_filename}_ready.json"
     hull = Hull()
     hull.build(hull_model.model_dump())
-    print(f"Hull Name: {hull.name}")
-    print(f"Hull Description: {hull.description}")
-    print(f"Hull Units: {hull.units}")
-    print(f"Hull Target Waterline: {hull.target_waterline}")
-    print(f"Hull Target Weight: {hull.target_weight}")
-    print(f"Hull Target Payload: {hull.target_payload}")
-    print(f"Hull Length: {hull.length():.3f} m")
-    print(f"Hull Beam: {hull.beam():.3f} m")
-    print(f"Hull Depth: {hull.depth():.3f} m")  
-    print(f"Hull Volume: {hull.volume:.6f} m³")
-    print(f"Hull Center of Gravity: {hull.cg}")
-    print(f"Hull Waterline: {hull.waterline:.3f} m")
-    print(f"Hull Center of Buoyancy: {hull.cb}")
-    print(f"Hull Displacement: {hull.displacement:.2f} kg")
+    # print(f"Hull Name: {hull.name}")
+    # print(f"Hull Description: {hull.description}")
+    # print(f"Hull Target Waterline: {hull.target_waterline}")
+    # print(f"Hull Target Weight: {hull.target_weight}")
+    # print(f"Hull Target Payload: {hull.target_payload}")
+    # print(f"Hull Length: {hull.length():.3f} m")
+    # print(f"Hull Beam: {hull.beam():.3f} m")
+    # print(f"Hull Depth: {hull.depth():.3f} m")  
+    # print(f"Hull Volume: {hull.volume:.6f} m³")
+    # print(f"Hull Center of Gravity: {hull.cg}")
+    # print(f"Hull Waterline: {hull.waterline:.3f} m")
+    # print(f"Hull Center of Buoyancy: {hull.cb}")
+    # print(f"Hull Displacement: {hull.displacement:.2f} kg")
     
     result = HullModel()
     result.name = hull.name
     result.description = hull.description
-    result.units = hull.units
     result.target_waterline = hull.target_waterline
     result.target_weight = hull.target_weight
     result.target_payload = hull.target_payload

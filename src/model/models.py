@@ -19,7 +19,6 @@ class ProfileModel(BaseModel):
 class CreateHullModel(BaseModel):
     name: str
     description: str | None = None
-    units:  str | None = "metric"
     target_waterline: float | None = None
     target_payload: float | None = None
     target_weight: float | None = None
@@ -32,7 +31,6 @@ class CreateHullModel(BaseModel):
                     
                     "name": "Kayak 001",
                     "description": "Kayak 001",
-                    "units": "metric",
                     "target_waterline": 0.1,
                     "target_payload": 90.0,
                     "target_weight": 10.0,
@@ -90,7 +88,6 @@ class HullSummaryModel(BaseModel):
 class HullModel(BaseModel):
     name: str | None = None
     description: str | None = None
-    units:  str | None = "metric"
     target_waterline: float | None = None
     target_payload: float | None = None
     target_weight: float | None = None
@@ -119,7 +116,6 @@ class HullModel(BaseModel):
                     
                     "name": "Kayak 001",
                     "description": "Kayak 001",
-                    "units": "metric",
                     "target_waterline": 0.1,
                     "target_payload": 90.0,
                     "target_weight": 10.0,

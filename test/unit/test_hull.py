@@ -82,7 +82,6 @@ class TestPrepareHull:
         metadata = Metadata(
             name="Test Kayak",
             description="A test kayak",
-            units="metric",
             target_waterline=0.1,
             target_payload=80.0
         )
@@ -92,7 +91,6 @@ class TestPrepareHull:
         
         assert result.name == "Test Kayak"
         assert result.description == "A test kayak"
-        assert result.units == "metric"
         assert result.target_waterline == 0.1
         assert result.target_payload == 80.0
 
@@ -144,31 +142,11 @@ class TestPrepareHull:
         assert result.name == "Multi Profile Kayak"
         assert len(result.profiles) == 3
 
-    def test_prepare_hull_metadata_transfer(self):
-        """Test that all metadata fields are transferred correctly."""
-        metadata = Metadata(
-            name="Advanced Kayak",
-            description="High performance sea kayak",
-            units="imperial",
-            target_waterline=0.15,
-            target_payload=120.0
-        )
-        hull = Hull(metadata=metadata, profiles=[])
-        
-        result = prepare_hull(hull)
-        
-        assert result.name == "Advanced Kayak"
-        assert result.description == "High performance sea kayak"
-        assert result.units == "imperial"
-        assert result.target_waterline == 0.15
-        assert result.target_payload == 120.0
-
     def test_prepare_hull_with_none_metadata_fields(self):
         """Test prepare_hull with optional metadata fields as None."""
         metadata = Metadata(
             name="Minimal Kayak",
             description=None,
-            units="metric",
             target_waterline=None,
             target_payload=None
         )
@@ -178,7 +156,6 @@ class TestPrepareHull:
         
         assert result.name == "Minimal Kayak"
         assert result.description is None
-        assert result.units == "metric"
         assert result.target_waterline is None
         assert result.target_payload is None
 
@@ -210,7 +187,6 @@ class TestPrepareHullIntegration:
         metadata = Metadata(
             name="Sea Kayak Pro",
             description="High-performance sea kayak",
-            units="metric",
             target_waterline=0.12,
             target_payload=100.0
         )
@@ -248,7 +224,6 @@ class TestPrepareHullIntegration:
         # Verify all metadata transferred
         assert result.name == "Sea Kayak Pro"
         assert result.description == "High-performance sea kayak"
-        assert result.units == "metric"
         assert result.target_waterline == 0.12
         assert result.target_payload == 100.0
         

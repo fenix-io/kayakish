@@ -8,7 +8,6 @@ from src.geometry.curve import Curve
 class Hull:
     name: str
     description: str | None = None
-    units:  str | None = "metric"
     target_waterline: float | None = None
     target_weight: float | None = None
     target_payload: float | None = None
@@ -37,7 +36,6 @@ class Hull:
     def initialize_from_data(self, data: dict):
         self.name = data.get("name", "KAYAK HULL")
         self.description = data.get("description", "KAYAK HULL")
-        self.units = data.get("units", "metric")
         self.target_waterline = data.get("target_waterline", 0.1)
         self.target_weight = data.get("target_weight", 100)
         self.target_payload = data.get("target_payload", 100)
@@ -71,7 +69,6 @@ class Hull:
     def build(self, data: dict):
         self.name = data.get("name", "KAYAK HULL")
         self.description = data.get("description", "KAYAK HULL")
-        self.units = data.get("units", "metric")
         self.target_waterline = data.get("target_waterline", 0.1)
         self.target_weight = data.get("target_weight", 100)
         self.target_payload = data.get("target_payload", 100)
@@ -315,7 +312,6 @@ if __name__ == "__main__":
     hull.build(data)    
     print(f"Hull Name: {hull.name}")
     print(f"Hull Description: {hull.description}")
-    print(f"Hull Units: {hull.units}")
     print(f"Hull Target Waterline: {hull.target_waterline}")
     print(f"Hull Target Weight: {hull.target_weight}")
     print(f"Hull Target Payload: {hull.target_payload}")

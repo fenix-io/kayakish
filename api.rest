@@ -5,7 +5,6 @@ content-type: application/json
   "metadata": {
     "name": "Sea Kayak Pro",
     "description": "High-performance sea kayak with excellent stability",
-    "units": "metric",
     "hull_weight": 10,
     "target_waterline": 0.1,
     "target_payload": 100

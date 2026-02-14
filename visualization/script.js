@@ -171,7 +171,6 @@ async function loadHullDetailsForVisualization() {
         if (!response.ok) throw new Error('Failed to load hull details');
         
         hullDetails = await response.json();
-        console.log('Hull details loaded:', hullDetails);
         
         // Draw hull
         drawHull(hullDetails);
@@ -597,7 +596,6 @@ async function openEditModal(kayakName) {
         // Populate form fields
         document.getElementById('editHullName').value = hull.name || '';
         document.getElementById('editHullDescription').value = hull.description || '';
-        document.getElementById('editHullUnits').value = hull.units || 'metric';
         document.getElementById('editTargetWaterline').value = hull.target_waterline || '';
         document.getElementById('editTargetPayload').value = hull.target_payload || '';
         document.getElementById('editTargetWeight').value = hull.target_weight || '';
@@ -636,8 +634,6 @@ function formatCurvesToText(curves) {
             uniqueCurves.push(curve);
         }
     });
-    
-    console.log(`Filtered ${originalCurves.length} original curves down to ${uniqueCurves.length} unique curves`);
     
     uniqueCurves.forEach((curve, idx) => {
         text += `curve: ${curve.name}\n`;
@@ -808,7 +804,6 @@ async function handleCreateHull(e) {
         // Get form values
         const name = document.getElementById('hullName').value.trim();
         const description = document.getElementById('hullDescription').value.trim() || null;
-        const units = document.getElementById('hullUnits').value;
         const targetWaterline = document.getElementById('targetWaterline').value;
         const targetPayload = document.getElementById('targetPayload').value;
         const targetWeight = document.getElementById('targetWeight').value;
@@ -826,7 +821,6 @@ async function handleCreateHull(e) {
         const requestBody = {
             name: name,
             description: description,
-            units: units,
             target_waterline: targetWaterline ? parseFloat(targetWaterline) : null,
             target_payload: targetPayload ? parseFloat(targetPayload) : null,
             target_weight: targetWeight ? parseFloat(targetWeight) : null,
@@ -901,7 +895,6 @@ async function handleEditHull(e) {
         // Get form values
         const name = document.getElementById('editHullName').value.trim();
         const description = document.getElementById('editHullDescription').value.trim() || null;
-        const units = document.getElementById('editHullUnits').value;
         const targetWaterline = document.getElementById('editTargetWaterline').value;
         const targetPayload = document.getElementById('editTargetPayload').value;
         const targetWeight = document.getElementById('editTargetWeight').value;
@@ -919,7 +912,6 @@ async function handleEditHull(e) {
         const requestBody = {
             name: name,
             description: description,
-            units: units,
             target_waterline: targetWaterline ? parseFloat(targetWaterline) : null,
             target_payload: targetPayload ? parseFloat(targetPayload) : null,
             target_weight: targetWeight ? parseFloat(targetWeight) : null,
@@ -1097,7 +1089,6 @@ async function handleStabilityAnalysis(e) {
         }
         
         stabilityData = await response.json();
-        console.log('Stability analysis result:', stabilityData);
         
         // Hide loader, show results
         document.getElementById('stabilityLoader').classList.remove('show');
@@ -1630,7 +1621,6 @@ function ensureCanvasSize(canvas) {
         if (canvas.width !== Math.floor(rect.width) || canvas.height !== Math.floor(rect.height)) {
             canvas.width = Math.floor(rect.width);
             canvas.height = Math.floor(rect.height);
-            console.log('Canvas resized to:', canvas.width, canvas.height);
         }
         return true;
     }
@@ -1648,7 +1638,6 @@ function drawProfile() {
         return;
     }
     
-    console.log('Drawing profile on canvas:', canvas.width, canvas.height);
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -1667,7 +1656,6 @@ function drawProfile() {
     const maxY = beam / 2 
     const minZ = 0 
     const maxZ = depth 
-    console.log(`Depth: ${depth}, Beam: ${beam}`);
     // Add padding
     const padding = 40;
     const drawWidth = canvas.width - 2 * padding;
@@ -1682,9 +1670,6 @@ function drawProfile() {
     const scaleY = drawWidth / rangeY;
     const scaleZ = drawHeight / rangeZ;
     const scale = Math.min(scaleY, scaleZ) * 0.50;
-    console.log(`Canvas size: ${drawWidth}x${drawHeight}`);
-    console.log(`Range: Y=${rangeY}, Z=${rangeZ}`);
-    console.log(`Drawing with scale: ${scale}, scaleY: ${scaleY}, scaleZ: ${scaleZ}`);
     // Center the drawing
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;

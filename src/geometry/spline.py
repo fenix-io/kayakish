@@ -262,6 +262,7 @@ if __name__ == "__main__":
     spline = Spline3D(points)
     curve = spline.sample()
     for p in curve:
-        print(p)
+        # print(p)
+        pass
 
     spline.plot(n=200,show_control_points=True)

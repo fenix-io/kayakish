@@ -2,7 +2,6 @@
     
     "name": "Kayak 001",
     "description": "Kayak 001",
-    "units": "metric",
     "target_waterline": 0.11,
     "target_payload": 90,
     "target_weight": 10,

@@ -80,11 +80,11 @@ def create_stability_curve_points(
         hull_weight, hull.cg, paddler_weight, paddler_cg_z
     )
 
-    print(f"Hull CG:     x={hull.cg.x:.3f}, y={hull.cg.y:.3f}, z={hull.cg.z:.3f} m")
-    print(f"Paddler CG:  x={hull.cg.x:.3f}, y=0.000, z={paddler_cg_z:.3f} m")
-    print(f"Combined CG: x={combined_cg.x:.3f}, y={combined_cg.y:.3f}, z={combined_cg.z:.3f} m")
-    print(f"Hull weight: {hull_weight} kg, Paddler: {paddler_weight} kg, Total: {total_weight} kg")
-    print()
+    # print(f"Hull CG:     x={hull.cg.x:.3f}, y={hull.cg.y:.3f}, z={hull.cg.z:.3f} m")
+    # print(f"Paddler CG:  x={hull.cg.x:.3f}, y=0.000, z={paddler_cg_z:.3f} m")
+    # print(f"Combined CG: x={combined_cg.x:.3f}, y={combined_cg.y:.3f}, z={combined_cg.z:.3f} m")
+    # print(f"Hull weight: {hull_weight} kg, Paddler: {paddler_weight} kg, Total: {total_weight} kg")
+    # print()
 
     stability_points = []
 
@@ -137,13 +137,13 @@ def create_stability_curve_points(
             }
         )
 
-        print(
-            f"Angle {angle_deg:5.1f}° | GZ={gz:+.4f}m | "
-            f"Moment={moment:+.1f} N·m | "
-            f"CB.y={cb.y:+.4f} | CG.y={combined_cg_y_rotated:+.4f}"
-        )
+        # print(
+        #     f"Angle {angle_deg:5.1f}° | GZ={gz:+.4f}m | "
+        #     f"Moment={moment:+.1f} N·m | "
+        #     f"CB.y={cb.y:+.4f} | CG.y={combined_cg_y_rotated:+.4f}"
+        # )
         if break_on_vanishing and gz < 0 and angle_deg > 0:
-            print("Vanishing stability reached, stopping calculation.")
+            # print("Vanishing stability reached, stopping calculation.")
             break
 
     # Find angle of vanishing stability (where GZ becomes negative)
@@ -163,15 +163,15 @@ def create_stability_curve_points(
             max_moment = stability_points[i]["moment"]
             max_moment_angle = stability_points[i]["angle"]
             
-    if vanishing_angle:
-        print(f"\n⚠️  Angle of vanishing stability: {vanishing_angle:.1f}°")
-    else:
-        print(f"\n✓ Positive stability throughout range (0° to {max_angle}°)")
+    # if vanishing_angle:
+    #     print(f"\n⚠️  Angle of vanishing stability: {vanishing_angle:.1f}°")
+    # else:
+    #     print(f"\n✓ Positive stability throughout range (0° to {max_angle}°)")
 
     # Find maximum GZ and its angle
     max_gz_point = max(stability_points, key=lambda p: p["gz"])
-    print(f"Maximum GZ: {max_gz_point['gz']:.4f}m at {max_gz_point['angle']:.1f}°")
-    print(f"Maximum Righting Moment: {max_moment:.1f} N·m at {max_moment_angle:.1f}°")
+    # print(f"Maximum GZ: {max_gz_point['gz']:.4f}m at {max_gz_point['angle']:.1f}°")
+    # print(f"Maximum Righting Moment: {max_moment:.1f} N·m at {max_moment_angle:.1f}°")
 
     return vanishing_angle, max_moment, max_moment_angle, stability_points
 

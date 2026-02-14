@@ -1,7 +1,6 @@
 {
   "name": "K05",
   "description": "Mi K05 - update 05",
-  "units": "metric",
   "target_waterline": 0.12,
   "target_payload": 95.0,
   "target_weight": 12.0,
