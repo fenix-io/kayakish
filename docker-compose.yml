@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  kayakish:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kayakish
+    ports:
+      - "8080:80"
+    volumes:
+      # Mount data directory as a volume for persistence
+      - kayak_data:/app/data
+    environment:
+      # Configure data path (defaults to /app/data)
+      - DATA_PATH=/app/data
+      # API configuration
+      - API_HOST=127.0.0.1
+      - API_PORT=8000
+      # Application settings
+      - APP_NAME=Kayakish - Hull Analysis Tool
+      - DEBUG=false
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  # Named volume for persistent kayak data
+  kayak_data:
+    driver: local

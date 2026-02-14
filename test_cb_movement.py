@@ -138,7 +138,7 @@ def test_cb_movement_with_hull_method():
     data = read_file(file_path)
     
     hull = Hull()
-    hull.initialize(data)
+    hull.build(data)
     
     print(f"Hull: {hull.name}")
     print(f"Beam: {hull.beam():.3f}m, Depth: {hull.depth():.3f}m")
@@ -186,7 +186,7 @@ def test_single_profile_rotation():
     data = read_file(file_path)
     
     hull = Hull()
-    hull.initialize(data)
+    hull.build(data)
     
     # Get points at mid-hull
     mid_x = (hull.min_x + hull.max_x) / 2
@@ -250,7 +250,7 @@ if __name__ == "__main__":
     from src.geometry.hull import Hull, read_file
     
     hull = Hull()
-    hull.initialize(read_file('data/k01.json'))
+    hull.build(read_file('data/k01.json'))
     weight = hull.target_weight + hull.target_payload
     
     angles = list(range(0, -50, -5))

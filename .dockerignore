@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Documentation
+*.md
+!README.md
+*.rst
+docs/
+
+# Test files
+test/
+*_test.py
+test_*.py
+
+# Old/research code
+old/
+research/
+
+# Data files (will be mounted as volume)
+data/
+*.hull
+*.json
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Other
+.DS_Store
+Thumbs.db
+.env
+*.rest
+api.rest
+
+# Build artifacts
+dist/
+build/
+*.egg

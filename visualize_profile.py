@@ -9,7 +9,7 @@ from src.geometry.profile import Profile
 
 def visualize_profiles():
     hull = Hull()
-    hull.initialize(read_file('data/k01.json'))
+    hull.build(read_file('data/k01.json'))
     
     weight = hull.target_weight + hull.target_payload
     mid_x = (hull.min_x + hull.max_x) / 2

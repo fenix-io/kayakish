@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kayak Hull Viewer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Kayak List (Top Left) -->
+        <div class="kayak-list">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin-bottom: 0;">Available Kayaks</h2>
+                <button class="add-kayak-button" onclick="openCreateModal()">+ New</button>
+            </div>
+            <div id="kayakListContainer">
+                <p class="loading">Loading kayaks...</p>
+            </div>
+        </div>
+
+        <!-- Kayak Summary (Bottom Left) -->
+        <div class="kayak-summary">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 id="summaryTitle" style="margin-bottom: 0;">Summary</h2>
+                <button id="toggleDetailsBtn" class="toggle-details-button" style="display: none;" onclick="toggleDetailsView()">+ Details</button>
+            </div>
+            <div id="kayakSummaryContainer">
+                <p>Select a kayak to view summary</p>
+            </div>
+        </div>
+
+        <!-- Canvas Visualization (Right 4 blocks) -->
+        <div class="canvas-container">
+            <h2>Hull Visualization</h2>
+            <div class="controls">
+                <label for="viewSelect">View:</label>
+                <select id="viewSelect">
+                    <option value="iso">Isometric Side View</option>
+                    <option value="side">Side View (X-Z)</option>
+                    <option value="top">Top View (X-Y)</option>
+                    <option value="front">Front View (Y-Z)</option>
+                    <option value="3d">3D Perspective</option>
+                </select>
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: blue;"></span>
+                    <span>Curves</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-point" style="background-color: red;"></span>
+                    <span>Curve Points</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-point" style="background-color: green;"></span>
+                    <span>Profile Points</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: cyan;"></span>
+                    <span>Waterline</span>
+                </div>
+            </div>
+            <canvas id="hullCanvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Create Kayak Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Kayak</h2>
+                <span class="close" onclick="closeCreateModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="createHullForm">
+                    <div class="form-group">
+                        <label for="hullName">Name *</label>
+                        <input type="text" id="hullName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="hullDescription">Description</label>
+                        <input type="text" id="hullDescription">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hullUnits">Units</label>
+                            <select id="hullUnits">
+                                <option value="metric">Metric</option>
+                                <option value="imperial">Imperial</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="targetWaterline">Target Waterline (m)</label>
+                            <input type="number" id="targetWaterline" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="targetPayload">Target Payload (kg)</label>
+                            <input type="number" id="targetPayload" step="0.1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="targetWeight">Target Weight (kg)</label>
+                            <input type="number" id="targetWeight" step="0.1">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="curvesData">Curves Data *</label>
+                        <textarea id="curvesData" rows="10" placeholder="Enter curves in format:
+curve: curve_name
+x, y, z
+x, y, z
+curve: another_curve_name
+x, y, z
+..."></textarea>
+                        <small>Format: Start each curve with "curve: name", then list points as "x, y, z" (one per line)</small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeCreateModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Create Kayak</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header modal-header-danger">
+                <h2>Confirm Delete</h2>
+                <span class="close" onclick="closeDeleteModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the kayak <strong id="deleteKayakName"></strong>?</p>
+                <p style="color: #d32f2f; font-size: 13px; margin-top: 10px;">This action cannot be undone.</p>
+                
+                <div class="form-actions" style="margin-top: 20px;">
+                    <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                    <button type="button" class="btn-danger" onclick="confirmDeleteKayak()">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

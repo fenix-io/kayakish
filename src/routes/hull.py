@@ -5,6 +5,7 @@ from typing import List, Dict, Optional, Tuple
 
 from fastapi import APIRouter, HTTPException
 from src.analysis.stability import create_stability_curve_points
+from src.config import settings
 from src.geometry.hull import Hull
 from src.model.models import CreateHullModel, CurveModel, HullModel, HullSummaryModel, ProfileModel, StabilityAnalysisModel, StabilityAnalysisResultModel, StabilityPointModel
 from src.utils.filename import sanitize_filename
@@ -13,7 +14,7 @@ router = APIRouter()
 
 @router.get("/")
 def hull_list() -> List[HullSummaryModel]:
-    file_path = Path("data")
+    file_path = settings.data_path
     os.makedirs(file_path, exist_ok=True)
     # get the list of diles in path that ends with .hull
     hull_files = [f for f in file_path.iterdir() if f.is_file() and f.suffix == ".hull"]
@@ -30,13 +31,15 @@ def hull_list() -> List[HullSummaryModel]:
                                           volume=round(hull_model.volume,2), 
                                           waterline=round(hull_model.waterline,2), 
                                           displacement=round(hull_model.displacement,2)))
+    # Sort hulls by name alphabetically
+    hulls.sort(key=lambda h: h.name.lower() if h.name else "")
     return hulls
 
 
 @router.get("/{hull_name}")
 def get_hull(hull_name: str)  -> HullModel:
     safe_filename = sanitize_filename(hull_name)
-    file_path = Path("data")
+    file_path = settings.data_path
     os.makedirs(file_path, exist_ok=True)
     file_path = file_path / f"{safe_filename}.hull"
     with open(file_path, 'r') as f:
@@ -47,7 +50,7 @@ def get_hull(hull_name: str)  -> HullModel:
 @router.post("/")
 def create_hull(hull_model: CreateHullModel) -> HullModel:
     safe_filename = sanitize_filename(hull_model.name)
-    file_path = Path("data") / f"{safe_filename}.hull"
+    file_path = settings.data_path / f"{safe_filename}.hull"
     # prep_file_path = Path("data") / f"{safe_filename}_ready.json"
     
     if file_path.is_file():
@@ -104,7 +107,7 @@ def create_hull(hull_model: CreateHullModel) -> HullModel:
 @router.post("/{hull_name}/stability")
 def calculate_hull_stability(stability_analysis: StabilityAnalysisModel) -> StabilityAnalysisResultModel:
     safe_filename = sanitize_filename(stability_analysis.hull_name)
-    file_path = Path("data") / f"{safe_filename}.hull"
+    file_path = settings.data_path / f"{safe_filename}.hull"
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Hull not found.")
     with open(file_path, 'r') as f:
@@ -136,3 +139,16 @@ def calculate_hull_stability(stability_analysis: StabilityAnalysisModel) -> Stab
         ))
     
     return result 
+
+@router.delete("/{hull_name}")
+def delete_hull(hull_name: str)  -> HullModel:
+    safe_filename = sanitize_filename(hull_name)
+    file_path = settings.data_path
+    os.makedirs(file_path, exist_ok=True)
+    file_path = file_path / f"{safe_filename}.hull"
+    #delete the file if it exists
+    if file_path.is_file():
+        file_path.unlink()
+        return {"detail": "Hull deleted successfully."}
+    else:
+        raise HTTPException(status_code=404, detail="Hull not found.")

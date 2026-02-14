@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Kayak hull filled with light cyan -->
+  <path d="M 10 50 Q 20 32, 52 16 Q 40 34, 10 50 Z" 
+        fill="lightcyan" 
+        stroke="none"/>
+  
+  <!-- Top arc - thin blue outline (one side of kayak) -->
+  <path d="M 10 50 Q 20 32, 52 16" 
+        stroke="blue" 
+        stroke-width="1" 
+        fill="none" 
+        stroke-linecap="round"/>
+  
+  <!-- Bottom arc - thin blue outline (other side of kayak, curves opposite direction) -->
+  <path d="M 10 50 Q 40 42, 52 16" 
+        stroke="blue" 
+        stroke-width="1" 
+        fill="none" 
+        stroke-linecap="round"/>
+  
+  <!-- Cockpit - oval filled with dark grey -->
+  <ellipse cx="28" cy="36" 
+           rx="6" 
+           ry="4" 
+           fill="darkgrey" 
+           stroke="dimgrey" 
+           stroke-width="1"
+           transform="rotate(-35 28 36)"/>
+</svg>
