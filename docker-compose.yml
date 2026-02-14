@@ -9,8 +9,8 @@ services:
     ports:
       - "8080:80"
     volumes:
-      # Mount data directory as a volume for persistence
-      - kayak_data:/app/data
+      # Mount local data directory for direct host access
+      - ./data:/app/data
     environment:
       # Configure data path (defaults to /app/data)
       - DATA_PATH=/app/data
@@ -27,8 +27,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-volumes:
-  # Named volume for persistent kayak data
-  kayak_data:
-    driver: local

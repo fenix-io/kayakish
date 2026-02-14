@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="favicon.svg" type="image/svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kayak Hull Viewer</title>
     <link rel="stylesheet" href="styles.css">
@@ -32,36 +33,142 @@
 
         <!-- Canvas Visualization (Right 4 blocks) -->
         <div class="canvas-container">
-            <h2>Hull Visualization</h2>
-            <div class="controls">
-                <label for="viewSelect">View:</label>
-                <select id="viewSelect">
-                    <option value="iso">Isometric Side View</option>
-                    <option value="side">Side View (X-Z)</option>
-                    <option value="top">Top View (X-Y)</option>
-                    <option value="front">Front View (Y-Z)</option>
-                    <option value="3d">3D Perspective</option>
-                </select>
+            <h2>Hull Analysis</h2>
+            
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-button active" onclick="switchTab('visualization')">Visualization</button>
+                <button class="tab-button" onclick="switchTab('stability')">Stability</button>
+                <button class="tab-button" onclick="switchTab('profiles')">Profiles</button>
             </div>
-            <div class="legend">
-                <div class="legend-item">
-                    <span class="legend-color" style="background-color: blue;"></span>
-                    <span>Curves</span>
+            
+            <!-- Tab Content: Visualization -->
+            <div id="visualization-tab" class="tab-content active">
+                <div class="controls">
+                    <label for="viewSelect">View:</label>
+                    <select id="viewSelect">
+                        <option value="iso">Isometric Side View</option>
+                        <option value="side">Side View (X-Z)</option>
+                        <option value="top">Top View (X-Y)</option>
+                        <option value="front">Front View (Y-Z)</option>
+                        <option value="3d">3D Perspective</option>
+                    </select>
                 </div>
-                <div class="legend-item">
-                    <span class="legend-point" style="background-color: red;"></span>
-                    <span>Curve Points</span>
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #0000CC;"></span>
+                        <span>Curves (Above WL)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #99CCFF;"></span>
+                        <span>Curves (Below WL)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-point" style="background-color: #CC0000;"></span>
+                        <span>Points (Above WL)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-point" style="background-color: #FFB3B3;"></span>
+                        <span>Points (Below WL)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: cyan;"></span>
+                        <span>Waterline</span>
+                    </div>
                 </div>
-                <div class="legend-item">
-                    <span class="legend-point" style="background-color: green;"></span>
-                    <span>Profile Points</span>
+                <canvas id="hullCanvas"></canvas>
+            </div>
+            
+            <!-- Tab Content: Stability -->
+            <div id="stability-tab" class="tab-content">
+                <div class="stability-form-container">
+                    <form id="stabilityForm" class="stability-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="paddlerWeight">Paddler Weight (kg)</label>
+                                <input type="number" id="paddlerWeight" step="0.1" placeholder="e.g., 80.0">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="paddlerCgZ">Paddler CG Height (m)</label>
+                                <input type="number" id="paddlerCgZ" step="0.01" value="0.25">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="hullWeight">Hull Weight (kg)</label>
+                                <input type="number" id="hullWeight" step="0.1" placeholder="e.g., 25.0">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="maxAngle">Max Angle (degrees)</label>
+                                <input type="number" id="maxAngle" step="1" value="90">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="angleStep">Angle Step (degrees)</label>
+                                <input type="number" id="angleStep" step="0.5" value="3">
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn-primary" style="margin-top: 23px; width: 100%;">
+                                    Analyze Stability
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <div class="legend-item">
-                    <span class="legend-color" style="background-color: cyan;"></span>
-                    <span>Waterline</span>
+                
+                <div id="stabilityLoader" class="stability-loader">
+                    <img src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." />
+                    <p>Analyzing stability...</p>
+                </div>
+                
+                <div id="stabilityResults" class="stability-results">
+                    <div class="stability-graphs">
+                        <div class="graph-container">
+                            <h3>Righting Arm (GZ) vs Heel Angle</h3>
+                            <canvas id="gzCanvas"></canvas>
+                        </div>
+                        <div class="graph-container">
+                            <h3>Righting Moment vs Heel Angle</h3>
+                            <canvas id="momentCanvas"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <canvas id="hullCanvas"></canvas>
+            
+            <!-- Tab Content: Profiles -->
+            <div id="profiles-tab" class="tab-content">
+                <div id="profilesEmpty" class="empty-state">
+                    <p>Select a kayak and load details to view profiles</p>
+                </div>
+                
+                <div id="profilesContent" class="profiles-content">
+                    <div class="profile-selector">
+                        <label for="stationSelect">Station (x position):</label>
+                        <select id="stationSelect" onchange="selectStation()">
+                            <option value="">Select a station...</option>
+                        </select>
+                        <span id="stationInfo" class="station-info"></span>
+                    </div>
+                    
+                    <div class="profile-views">
+                        <div class="profile-view-container">
+                            <h3>Profile Cross-Section (Y-Z Plane)</h3>
+                            <canvas id="profileCanvas"></canvas>
+                        </div>
+                        
+                        <div class="hull-side-view-container">
+                            <h3>Hull Side View (Station Position)</h3>
+                            <canvas id="hullSideCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

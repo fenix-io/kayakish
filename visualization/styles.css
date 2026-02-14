@@ -468,3 +468,244 @@ h3 {
 .modal-header-danger {
     background-color: #dc3545;
 }
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s;
+}
+
+.tab-button:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.tab-button.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+    font-weight: bold;
+}
+
+.tab-content {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: auto;
+}
+
+.tab-content.active {
+    display: flex;
+}
+
+/* Stability Tab */
+.stability-form-container {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+
+.stability-form {
+    max-width: 800px;
+}
+
+.stability-loader {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.stability-loader.show {
+    display: flex;
+}
+
+.stability-loader img {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 15px;
+}
+
+.stability-loader p {
+    color: #666;
+    font-size: 14px;
+}
+
+.stability-results {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: auto;
+}
+
+.stability-results.show {
+    display: flex;
+}
+
+.stability-graphs {
+    display: flex;
+    gap: 15px;
+    flex: 1;
+    min-height: 0;
+}
+
+.graph-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.graph-container h3 {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.graph-container canvas {
+    border: 1px solid #ddd;
+    background-color: #fafafa;
+    flex: 1;
+    min-height: 300px;
+    width: 100%;
+}
+
+#stabilityCanvas {
+    border: 1px solid #ddd;
+    background-color: #fafafa;
+    flex: 1;
+    min-height: 400px;
+}
+
+/* Profiles Tab */
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: #999;
+    font-size: 16px;
+    font-style: italic;
+}
+
+.profiles-content {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.profiles-content.show {
+    display: flex;
+}
+
+.profile-selector {
+    background-color: #f8f9fa;
+    padding: 15px 20px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-shrink: 0;
+}
+
+.profile-selector label {
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+}
+
+.profile-selector select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 200px;
+    cursor: pointer;
+    background-color: white;
+}
+
+.profile-selector select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.station-info {
+    color: #666;
+    font-size: 13px;
+}
+
+.profile-views {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+    min-height: 0;
+}
+
+.profile-view-container,
+.hull-side-view-container {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    background-color: white;
+}
+
+.profile-view-container {
+    height: 450px;
+    min-height: 450px;
+}
+
+.hull-side-view-container {
+    height: 225px;
+    min-height: 225px;
+}
+
+.profile-view-container h3,
+.hull-side-view-container h3 {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin: 0 0 10px 0;
+    text-align: center;
+    flex-shrink: 0;
+    height: 20px;
+    line-height: 20px;
+}
+
+.profile-view-container canvas,
+.hull-side-view-container canvas {
+    border: 1px solid #ddd;
+    background-color: #fafafa;
+    display: block;
+    width: 100%;
+    flex: 1;
+}
