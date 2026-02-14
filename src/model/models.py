@@ -198,3 +198,4 @@ class StabilityAnalysisModel(BaseModel):
     hull_weight: float | None = None
     max_angle: float = 90
     step: float = 3
+    break_on_vanishing: bool = False

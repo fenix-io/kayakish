@@ -140,6 +140,9 @@ async function loadHullDetailsForVisualization() {
         // Initialize profiles
         initializeProfiles(hullDetails);
         
+        // Populate stability form with hull values
+        populateStabilityForm(hullDetails);
+        
     } catch (error) {
         console.error('Error loading hull details:', error);
         const canvas = document.getElementById('hullCanvas');
@@ -148,6 +151,28 @@ async function loadHullDetailsForVisualization() {
         ctx.fillStyle = '#666';
         ctx.font = '14px Arial';
         ctx.fillText(`Error loading hull: ${error.message}`, canvas.width / 2 - 100, canvas.height / 2);
+    }
+}
+
+// Populate stability form with hull values
+function populateStabilityForm(hull) {
+    // Populate paddler weight from target_payload
+    if (hull.target_payload !== null && hull.target_payload !== undefined) {
+        document.getElementById('paddlerWeight').value = hull.target_payload;
+    }
+    
+    // Populate hull weight from target_weight
+    if (hull.target_weight !== null && hull.target_weight !== undefined) {
+        document.getElementById('hullWeight').value = hull.target_weight;
+    }
+    
+    // Set default values (these are already in HTML but let's ensure they're set)
+    if (!document.getElementById('paddlerCgZ').value) {
+        document.getElementById('paddlerCgZ').value = '0.25';
+    }
+    
+    if (!document.getElementById('angleStep').value) {
+        document.getElementById('angleStep').value = '3';
     }
 }
 
@@ -723,6 +748,10 @@ function switchTab(tabName) {
     } else if (tabName === 'stability' && stabilityData) {
         setupStabilityCanvas();
         drawStabilityResults(stabilityData);
+    } else if (tabName === 'profiles' && currentProfile) {
+        // Redraw profiles when tab becomes visible
+        drawProfile();
+        drawHullSideView();
     }
 }
 
@@ -773,6 +802,7 @@ async function handleStabilityAnalysis(e) {
         const hullWeight = document.getElementById('hullWeight').value;
         const maxAngle = document.getElementById('maxAngle').value;
         const angleStep = document.getElementById('angleStep').value;
+        const breakOnVanishing = document.getElementById('breakOnVanishing').checked;
         
         // Build request body
         const requestBody = {
@@ -781,7 +811,8 @@ async function handleStabilityAnalysis(e) {
             paddler_cg_z: parseFloat(paddlerCgZ),
             hull_weight: hullWeight ? parseFloat(hullWeight) : null,
             max_angle: parseFloat(maxAngle),
-            step: parseFloat(angleStep)
+            step: parseFloat(angleStep),
+            break_on_vanishing: breakOnVanishing
         };
         
         // Hide form and results, show loader
@@ -1210,6 +1241,9 @@ function addBackButton() {
 // ========== PROFILES TAB ==========
 
 let currentProfile = null;
+let beam = null;
+let depth = null;
+let length = null;
 
 // Initialize profiles when hull details are loaded
 function initializeProfiles(hull) {
@@ -1230,10 +1264,13 @@ function initializeProfiles(hull) {
     hull.profiles.forEach((profile, idx) => {
         const option = document.createElement('option');
         option.value = idx;
-        option.textContent = `Station ${profile.station.toFixed(4)} m`;
+        option.textContent = `Station ${profile.station.toFixed(2)} m`;
         stationSelect.appendChild(option);
     });
     
+    beam = hull.beam || null;
+    depth = hull.depth || null;
+    length = hull.length || null;
     // Setup canvases
     setupProfileCanvases();
     
@@ -1244,43 +1281,35 @@ function initializeProfiles(hull) {
     }
 }
 
-// Setup profile canvases
+// Setup profile canvases - only handles window resize listener
+// Canvas sizing is handled dynamically by ensureCanvasSize() before each draw
 function setupProfileCanvases() {
-    const profileCanvas = document.getElementById('profileCanvas');
-    const hullSideCanvas = document.getElementById('hullSideCanvas');
-    if (!profileCanvas || !hullSideCanvas) return;
-    
-    function resizeCanvases() {
-        // Wait a tick for flex layout to settle
-        requestAnimationFrame(() => {
-            // Get the actual rendered size of the canvas elements
-            const profileRect = profileCanvas.getBoundingClientRect();
-            const sideRect = hullSideCanvas.getBoundingClientRect();
-            
-            if (profileRect.width > 0 && profileRect.height > 0) {
-                // Set canvas internal resolution to match display size
-                profileCanvas.width = Math.floor(profileRect.width);
-                profileCanvas.height = Math.floor(profileRect.height);
-            }
-            
-            if (sideRect.width > 0 && sideRect.height > 0) {
-                // Set canvas internal resolution to match display size
-                hullSideCanvas.width = Math.floor(sideRect.width);
-                hullSideCanvas.height = Math.floor(sideRect.height);
-            }
-            
-            if (currentProfile !== null) {
-                drawProfile();
-                drawHullSideView();
-            }
-        });
+    function onResize() {
+        if (currentProfile !== null) {
+            drawProfile();
+            drawHullSideView();
+        }
     }
     
-    resizeCanvases();
-    // Also call after delays to ensure layout is complete
-    setTimeout(resizeCanvases, 100);
-    setTimeout(resizeCanvases, 300);
-    window.addEventListener('resize', resizeCanvases);
+    window.addEventListener('resize', onResize);
+}
+
+// Change profile by offset (e.g., -1, +1, -10, +10)
+function changeProfile(offset) {
+    const stationSelect = document.getElementById('stationSelect');
+    const currentIdx = parseInt(stationSelect.value);
+    
+    if (isNaN(currentIdx) || !hullDetails || !hullDetails.profiles) return;
+    
+    const newIdx = currentIdx + offset;
+    const maxIdx = hullDetails.profiles.length - 1;
+    
+    // Check bounds
+    if (newIdx < 0 || newIdx > maxIdx) return;
+    
+    // Update selector and draw
+    stationSelect.value = newIdx.toString();
+    selectStation();
 }
 
 // Select a station and draw its profile
@@ -1296,9 +1325,54 @@ function selectStation() {
     const stationInfo = document.getElementById('stationInfo');
     stationInfo.textContent = `${currentProfile.points.length} points`;
     
-    // Draw views
-    drawProfile();
-    drawHullSideView();
+    // Update navigation button states
+    updateNavButtons();
+    
+    // Only draw if profiles tab is active
+    if (currentTab === 'profiles') {
+        drawProfile();
+        drawHullSideView();
+    }
+}
+
+// Update navigation button states based on current position
+function updateNavButtons() {
+    if (!hullDetails || !hullDetails.profiles) return;
+    
+    const stationSelect = document.getElementById('stationSelect');
+    const currentIdx = parseInt(stationSelect.value);
+    
+    if (isNaN(currentIdx)) return;
+    
+    const maxIdx = hullDetails.profiles.length - 1;
+    
+    // Get all nav buttons
+    const navButtons = document.querySelectorAll('.nav-btn');
+    if (navButtons.length !== 4) return;
+    
+    const [btn10Left, btn1Left, btn1Right, btn10Right] = navButtons;
+    
+    // Update button states
+    btn10Left.disabled = (currentIdx - 10) < 0;
+    btn1Left.disabled = (currentIdx - 1) < 0;
+    btn1Right.disabled = (currentIdx + 1) > maxIdx;
+    btn10Right.disabled = (currentIdx + 10) > maxIdx;
+}
+
+// Ensure canvas is properly sized
+function ensureCanvasSize(canvas) {
+    if (!canvas) return false;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+        // Only update if different to avoid unnecessary redraws
+        if (canvas.width !== Math.floor(rect.width) || canvas.height !== Math.floor(rect.height)) {
+            canvas.width = Math.floor(rect.width);
+            canvas.height = Math.floor(rect.height);
+            console.log('Canvas resized to:', canvas.width, canvas.height);
+        }
+        return true;
+    }
+    return false;
 }
 
 // Draw the current profile cross-section
@@ -1306,6 +1380,13 @@ function drawProfile() {
     const canvas = document.getElementById('profileCanvas');
     if (!canvas || !currentProfile) return;
     
+    // Ensure canvas is properly sized before drawing
+    if (!ensureCanvasSize(canvas)) {
+        console.warn('Canvas not ready for drawing');
+        return;
+    }
+    
+    console.log('Drawing profile on canvas:', canvas.width, canvas.height);
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -1320,11 +1401,11 @@ function drawProfile() {
     // Calculate bounds (Y-Z plane)
     const yValues = points.map(p => p[1]);
     const zValues = points.map(p => p[2]);
-    const minY = Math.min(...yValues);
-    const maxY = Math.max(...yValues);
-    const minZ = Math.min(...zValues);
-    const maxZ = Math.max(...zValues);
-    
+    const minY = -beam / 2 
+    const maxY = beam / 2 
+    const minZ = 0 
+    const maxZ = depth 
+    console.log(`Depth: ${depth}, Beam: ${beam}`);
     // Add padding
     const padding = 40;
     const drawWidth = canvas.width - 2 * padding;
@@ -1334,7 +1415,6 @@ function drawProfile() {
     const rangeY = maxY - minY || 1;
     const rangeZ = maxZ - minZ || 1;
     const scale = Math.min(drawWidth / rangeY, drawHeight / rangeZ) * 0.9;
-    
     // Center the drawing
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
@@ -1426,6 +1506,12 @@ function drawHullSideView() {
     const canvas = document.getElementById('hullSideCanvas');
     if (!canvas || !hullDetails || !currentProfile) return;
     
+    // Ensure canvas is properly sized before drawing
+    if (!ensureCanvasSize(canvas)) {
+        console.warn('Hull side canvas not ready for drawing');
+        return;
+    }
+    
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -1437,31 +1523,38 @@ function drawHullSideView() {
         return;
     }
     
-    // Calculate bounds (X-Z plane for side view)
-    let minX = Infinity, maxX = -Infinity;
-    let minZ = Infinity, maxZ = -Infinity;
+    // // Calculate bounds (X-Z plane for side view)
+    // let minX = Infinity, maxX = -Infinity;
+    // let minZ = Infinity, maxZ = -Infinity;
     
-    curves.forEach(curve => {
-        curve.points.forEach(p => {
-            minX = Math.min(minX, p[0]);
-            maxX = Math.max(maxX, p[0]);
-            minZ = Math.min(minZ, p[2]);
-            maxZ = Math.max(maxZ, p[2]);
-        });
-    });
-    
+    // curves.forEach(curve => {
+    //     curve.points.forEach(p => {
+    //         minX = Math.min(minX, p[0]);
+    //         maxX = Math.max(maxX, p[0]);
+    //         minZ = Math.min(minZ, p[2]);
+    //         maxZ = Math.max(maxZ, p[2]);
+    //     });
+    // });
+    minX = 0;
+    maxX = length;
+    minZ = 0;
+    maxZ = depth;
     // Add padding
     const padding = 35;
     const drawWidth = canvas.width - 2 * padding;
     const drawHeight = canvas.height - 2 * padding;
     
     // Calculate scale
-    const rangeX = maxX - minX || 1;
-    const rangeZ = maxZ - minZ || 1;
+    const rangeX = length;
+    const rangeZ = depth;
     const scaleX = drawWidth / rangeX;
     const scaleZ = drawHeight / rangeZ;
-    const scale = Math.min(scaleX, scaleZ) * 0.9;
+    const scale = Math.min(scaleX, scaleZ) * 0.96;
     
+    console.log(`Range: X=${rangeX}, Z=${rangeZ}`);
+    console.log(`Canvas: ${drawWidth}x${drawHeight}`);
+    console.log(`Scale: ${scale.toFixed(2)}`);
+
     // Helper function to convert coords to canvas coords
     function toCanvas(x, z) {
         return {

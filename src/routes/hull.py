@@ -121,7 +121,8 @@ def calculate_hull_stability(stability_analysis: StabilityAnalysisModel) -> Stab
         paddler_weight=stability_analysis.paddler_weight, 
         hull_weight=stability_analysis.hull_weight, 
         max_angle=stability_analysis.max_angle, 
-        step=stability_analysis.step
+        step=stability_analysis.step,
+        break_on_vanishing=stability_analysis.break_on_vanishing
     )
     result =  StabilityAnalysisResultModel(
         vanishing_angle=vanishing_angle,

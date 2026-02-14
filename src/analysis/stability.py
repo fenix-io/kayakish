@@ -47,6 +47,7 @@ def create_stability_curve_points(
     hull_weight: float = None,
     max_angle: float = 90,
     step: float = 3,
+    break_on_vanishing: bool = False,
 ) -> Tuple[float, float, float, list[dict]]:
     """Calculate stability curve (GZ curve) for a hull with payload.
 
@@ -141,6 +142,9 @@ def create_stability_curve_points(
             f"Moment={moment:+.1f} N·m | "
             f"CB.y={cb.y:+.4f} | CG.y={combined_cg_y_rotated:+.4f}"
         )
+        if break_on_vanishing and gz < 0 and angle_deg > 0:
+            print("Vanishing stability reached, stopping calculation.")
+            break
 
     # Find angle of vanishing stability (where GZ becomes negative)
     vanishing_angle = None
