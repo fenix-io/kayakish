@@ -95,7 +95,7 @@ def create_hull(hull_model: CreateHullModel) -> HullModel:
         result.max_z = hull.max_z
         result.displacement = hull.displacement
         for curve in hull.curves:
-            result.curves.append(CurveModel(name=curve.name, points=[(p.x, p.y, p.z) for p in curve.points]))
+            result.curves.append(CurveModel(name=curve.name, mirrored=curve.mirrored, points=[(p.x, p.y, p.z) for p in curve.points]))
         for profile in hull.profiles:
             result.profiles.append(ProfileModel(station=profile.station, points=[(p.x, p.y, p.z) for p in profile.points])) 
         
@@ -103,6 +103,87 @@ def create_hull(hull_model: CreateHullModel) -> HullModel:
         with open(file_path, 'w') as f:
             f.write(result.model_dump_json(indent=2))
     return result
+
+@router.put("/{hull_name}")
+def update_hull(hull_name: str, hull_model: CreateHullModel) -> HullModel:
+    if hull_name != hull_model.name:
+        #rename the existing file to the new name if it exists
+        old_safe_filename = sanitize_filename(hull_name)
+        old_file_path = settings.data_path / f"{old_safe_filename}.hull"
+        new_safe_filename = sanitize_filename(hull_model.name)
+        new_file_path = settings.data_path / f"{new_safe_filename}.hull"
+        if old_file_path.is_file():
+            old_file_path.rename(new_file_path)
+        else:
+           raise HTTPException(status_code=404, detail="Hull not found.")
+        file_path = new_file_path
+    else:
+        file_path = settings.data_path / f"{sanitize_filename(hull_name)}.hull" 
+        if not file_path.is_file():
+           raise HTTPException(status_code=404, detail="Hull not found.")
+    
+    # prep_file_path = Path("data") / f"{safe_filename}_ready.json"
+    hull = Hull()
+    hull.build(hull_model.model_dump())
+    print(f"Hull Name: {hull.name}")
+    print(f"Hull Description: {hull.description}")
+    print(f"Hull Units: {hull.units}")
+    print(f"Hull Target Waterline: {hull.target_waterline}")
+    print(f"Hull Target Weight: {hull.target_weight}")
+    print(f"Hull Target Payload: {hull.target_payload}")
+    print(f"Hull Length: {hull.length():.3f} m")
+    print(f"Hull Beam: {hull.beam():.3f} m")
+    print(f"Hull Depth: {hull.depth():.3f} m")  
+    print(f"Hull Volume: {hull.volume:.6f} m³")
+    print(f"Hull Center of Gravity: {hull.cg}")
+    print(f"Hull Waterline: {hull.waterline:.3f} m")
+    print(f"Hull Center of Buoyancy: {hull.cb}")
+    print(f"Hull Displacement: {hull.displacement:.2f} kg")
+    
+    result = HullModel()
+    result.name = hull.name
+    result.description = hull.description
+    result.units = hull.units
+    result.target_waterline = hull.target_waterline
+    result.target_weight = hull.target_weight
+    result.target_payload = hull.target_payload
+    result.length = hull.length()
+    result.beam = hull.beam()
+    result.depth = hull.depth()
+    result.volume = hull.volume
+    result.cg = (hull.cg.x, hull.cg.y, hull.cg.z) if hull.cg else None
+    result.waterline = hull.waterline
+    result.cb = (hull.cb.x, hull.cb.y, hull.cb.z) if hull.cb else None
+    result.min_x = hull.min_x
+    result.max_x = hull.max_x
+    result.min_y = hull.min_y
+    result.max_y = hull.max_y
+    result.min_z = hull.min_z
+    result.max_z = hull.max_z
+    result.displacement = hull.displacement
+    for curve in hull.curves:
+        result.curves.append(CurveModel(name=curve.name, mirrored=curve.mirrored, points=[(p.x, p.y, p.z) for p in curve.points]))
+    for profile in hull.profiles:
+        result.profiles.append(ProfileModel(station=profile.station, points=[(p.x, p.y, p.z) for p in profile.points])) 
+    
+    os.makedirs(file_path.parent, exist_ok=True)
+    with open(file_path, 'w') as f:
+        f.write(result.model_dump_json(indent=2))
+
+    return result
+
+@router.delete("/{hull_name}")
+def delete_hull(hull_name: str)  -> HullModel:
+    safe_filename = sanitize_filename(hull_name)
+    file_path = settings.data_path
+    os.makedirs(file_path, exist_ok=True)
+    file_path = file_path / f"{safe_filename}.hull"
+    #delete the file if it exists
+    if file_path.is_file():
+        file_path.unlink()
+        return {"detail": "Hull deleted successfully."}
+    else:
+        raise HTTPException(status_code=404, detail="Hull not found.")
 
 @router.post("/{hull_name}/stability")
 def calculate_hull_stability(stability_analysis: StabilityAnalysisModel) -> StabilityAnalysisResultModel:
@@ -140,16 +221,3 @@ def calculate_hull_stability(stability_analysis: StabilityAnalysisModel) -> Stab
         ))
     
     return result 
-
-@router.delete("/{hull_name}")
-def delete_hull(hull_name: str)  -> HullModel:
-    safe_filename = sanitize_filename(hull_name)
-    file_path = settings.data_path
-    os.makedirs(file_path, exist_ok=True)
-    file_path = file_path / f"{safe_filename}.hull"
-    #delete the file if it exists
-    if file_path.is_file():
-        file_path.unlink()
-        return {"detail": "Hull deleted successfully."}
-    else:
-        raise HTTPException(status_code=404, detail="Hull not found.")

@@ -2,12 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" href="favicon.svg" type="image/svg">
+    <link rel="icon" href="logo.svg" type="image/svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kayak Hull Viewer</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <header class="app-header">
+        <div class="header-content">
+            <img src="logo.svg" alt="Kayakish Logo" class="app-logo">
+            <div class="header-text">
+                <h1 class="app-title">Kayakish</h1>
+                <p class="app-subtitle">Kayak and small boats calculation tool</p>
+            </div>
+        </div>
+    </header>
     <div class="container">
         <!-- Kayak List (Top Left) -->
         <div class="kayak-list">
@@ -17,6 +26,11 @@
             </div>
             <div id="kayakListContainer">
                 <p class="loading">Loading kayaks...</p>
+            </div>
+            <!-- Notification Area -->
+            <div id="notification" class="notification">
+                <span id="notificationMessage"></span>
+                <button class="notification-close" onclick="closeNotification()">&times;</button>
             </div>
         </div>
 
@@ -246,6 +260,73 @@ x, y, z
                     <div class="form-actions">
                         <button type="button" class="btn-secondary" onclick="closeCreateModal()">Cancel</button>
                         <button type="submit" class="btn-primary">Create Kayak</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Kayak Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Kayak</h2>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editHullForm">
+                    <div class="form-group">
+                        <label for="editHullName">Name *</label>
+                        <input type="text" id="editHullName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editHullDescription">Description</label>
+                        <input type="text" id="editHullDescription">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editHullUnits">Units</label>
+                            <select id="editHullUnits">
+                                <option value="metric">Metric</option>
+                                <option value="imperial">Imperial</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editTargetWaterline">Target Waterline (m)</label>
+                            <input type="number" id="editTargetWaterline" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editTargetPayload">Target Payload (kg)</label>
+                            <input type="number" id="editTargetPayload" step="0.1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editTargetWeight">Target Weight (kg)</label>
+                            <input type="number" id="editTargetWeight" step="0.1">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editCurvesData">Curves Data *</label>
+                        <textarea id="editCurvesData" rows="10" placeholder="Enter curves in format:
+curve: curve_name
+x, y, z
+x, y, z
+curve: another_curve_name
+x, y, z
+..."></textarea>
+                        <small>Format: Start each curve with "curve: name", then list points as "x, y, z" (one per line)</small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Update Kayak</button>
                     </div>
                 </form>
             </div>

@@ -4,16 +4,17 @@ KayakHull class for defining and managing kayak hull geometry.
 
 import numpy as np
 from typing import List, Dict, Optional, Tuple
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CurveModel(BaseModel):
     name: str
+    mirrored: bool | None = False
     points: List[Tuple[float, float, float]] 
 
 class ProfileModel(BaseModel):
     station: float = 0.0   
-    points: List[Tuple[float, float, float]] = []
+    points: List[Tuple[float, float, float]] = Field(default_factory=list)
     
 class CreateHullModel(BaseModel):
     name: str
@@ -22,7 +23,7 @@ class CreateHullModel(BaseModel):
     target_waterline: float | None = None
     target_payload: float | None = None
     target_weight: float | None = None
-    curves: List[CurveModel] = [] 
+    curves: List[CurveModel] = Field(default_factory=list) 
     
     model_config = {
         "json_schema_extra": {
@@ -93,7 +94,7 @@ class HullModel(BaseModel):
     target_waterline: float | None = None
     target_payload: float | None = None
     target_weight: float | None = None
-    curves: List[CurveModel] = [] 
+    curves: List[CurveModel] = Field(default_factory=list)
     file_name: str | None = None
     length: float | None = None
     beam: float | None = None
@@ -103,7 +104,7 @@ class HullModel(BaseModel):
     cb: Tuple[float, float, float] | None = None
     waterline: float | None = None
     displacement: float | None = None
-    profiles: List[ProfileModel] = []
+    profiles: List[ProfileModel] = Field(default_factory=list)
     min_x: float | None = None
     max_x: float | None = None
     min_y: float | None = None
@@ -189,7 +190,7 @@ class StabilityAnalysisResultModel(BaseModel):
     vanishing_angle: float | None = None
     max_moment: float | None = None
     max_moment_angle: float | None = None
-    stability_points: List[StabilityPointModel] = []
+    stability_points: List[StabilityPointModel] = Field(default_factory=list)
 
 class StabilityAnalysisModel(BaseModel):
     hull_name: str

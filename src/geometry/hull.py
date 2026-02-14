@@ -3,7 +3,7 @@ from pprint import pprint
 import numpy as np
 from src.geometry.profile import Profile
 from src.geometry.point import Point3D
-from src.geometry.spline import Spline3D
+from src.geometry.curve import Curve
 
 class Hull:
     name: str
@@ -14,13 +14,12 @@ class Hull:
     target_payload: float | None = None
     waterline: float | None = None
     file_name: str | None = None
-    curves: list[Spline3D] = []
-    profiles: list[Profile] = []     
     
     def __init__(self):
-       pass
+        self.curves: list[Curve] = []
+        self.profiles: list[Profile] = []
     
-    def _add_spline(self, spline: Spline3D):
+    def _add_spline(self, spline: Curve):
         self.curves.append(spline)
 
     def as_dict(self):
@@ -62,7 +61,8 @@ class Hull:
         for curve_data in data.get("curves", []):
             name = curve_data.get("name", "Unnamed Curve")
             points = [Point3D(p[0], p[1], p[2]) for p in curve_data.get("points", [])]
-            self._add_spline(Spline3D(name, points))
+            mirrored = curve_data.get("mirrored", False)
+            self._add_spline(Curve(name, points, mirrored=mirrored))
         for profile_data in data.get("profiles", []):
             station = profile_data.get("station", 0.0)
             points = [Point3D(p[0], p[1], p[2]) for p in profile_data.get("points", [])]
@@ -94,7 +94,7 @@ class Hull:
                 points.append(p)
                 y += point[1]
 
-            spline = Spline3D(name, points)
+            spline = Curve(name, points, mirrored=False)
             self._add_spline(spline)  
             if y != 0:
                 for point in spline_data.get("points", []):
@@ -102,7 +102,7 @@ class Hull:
                     self._update_min_max(p)
                     oposite.append(p)
                 
-                spline_oposite = Spline3D("opposite " + name, oposite)
+                spline_oposite = Curve("Mirror of " + name, oposite, mirrored=True)
                 self._add_spline(spline_oposite)
             
         volume, cg = self._calculate_profiles_volume_and_cg()

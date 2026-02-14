@@ -4,9 +4,10 @@ from src.geometry.point import Point3D
 
 class Profile:
     station: float = 0.0   
-    points: List[Point3D] = []
     
-    def __init__(self, station: float = 0.0, points: List[Point3D] = []):
+    def __init__(self, station: float = 0.0, points: List[Point3D] = None):
+        if points is None:
+            points = []
         self.points = []
         for new in points:
             for old in self.points:

@@ -4,6 +4,37 @@ let hullDetails = null;
 let currentView = 'iso';
 let currentTab = 'visualization';
 let stabilityData = null;
+let notificationTimeout = null;
+
+// Notification functions
+function showNotification(message, type = 'success') {
+    const notification = document.getElementById('notification');
+    const messageEl = document.getElementById('notificationMessage');
+    
+    // Clear any existing timeout
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+    }
+    
+    // Set message and type
+    messageEl.textContent = message;
+    notification.className = 'notification show ' + type;
+    
+    // Auto-hide after 10 seconds
+    notificationTimeout = setTimeout(() => {
+        closeNotification();
+    }, 10000);
+}
+
+function closeNotification() {
+    const notification = document.getElementById('notification');
+    notification.classList.remove('show');
+    
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+        notificationTimeout = null;
+    }
+}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Setup form submission handlers
     document.getElementById('createHullForm').addEventListener('submit', handleCreateHull);
+    document.getElementById('editHullForm').addEventListener('submit', handleEditHull);
     document.getElementById('stabilityForm').addEventListener('submit', handleStabilityAnalysis);
 });
 
@@ -46,12 +78,19 @@ async function loadKayakList() {
                         <div class="kayak-item-name">${kayak.name}</div>
                         <div class="kayak-item-desc">${kayak.description || 'No description'}</div>
                     </div>
-                    <button class="delete-btn" onclick="event.stopPropagation(); openDeleteModal('${kayak.name}')" title="Delete kayak">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                        </svg>
-                    </button>
+                    <div class="kayak-item-actions">
+                        <button class="edit-btn" onclick="event.stopPropagation(); openEditModal('${kayak.name}')" title="Edit kayak">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                            </svg>
+                        </button>
+                        <button class="delete-btn" onclick="event.stopPropagation(); openDeleteModal('${kayak.name}')" title="Delete kayak">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             `;
             item.addEventListener('click', () => selectKayak(kayak, item));
@@ -543,6 +582,78 @@ function openCreateModal() {
     document.getElementById('createModal').classList.add('show');
 }
 
+let editingKayakName = null;
+
+async function openEditModal(kayakName) {
+    editingKayakName = kayakName;
+    
+    try {
+        // Fetch full hull details
+        const response = await fetch(`${API_BASE}/hulls/${kayakName}`);
+        if (!response.ok) throw new Error('Failed to load kayak details');
+        
+        const hull = await response.json();
+        
+        // Populate form fields
+        document.getElementById('editHullName').value = hull.name || '';
+        document.getElementById('editHullDescription').value = hull.description || '';
+        document.getElementById('editHullUnits').value = hull.units || 'metric';
+        document.getElementById('editTargetWaterline').value = hull.target_waterline || '';
+        document.getElementById('editTargetPayload').value = hull.target_payload || '';
+        document.getElementById('editTargetWeight').value = hull.target_weight || '';
+        
+        // Format curves to textarea
+        const curvesText = formatCurvesToText(hull.curves);
+        document.getElementById('editCurvesData').value = curvesText;
+        
+        // Show modal
+        document.getElementById('editModal').classList.add('show');
+        
+    } catch (error) {
+        console.error('Error loading kayak for edit:', error);
+        alert(`Error loading kayak: ${error.message}`);
+    }
+}
+
+function formatCurvesToText(curves) {
+    if (!curves || curves.length === 0) return '';
+    
+    let text = '';
+    // Filter out mirrored curves - keep only originals
+    const originalCurves = curves.filter(curve => curve.mirrored !== true);
+    
+    // Deduplicate by curve name and points - keep only first occurrence
+    const seen = new Map();
+    const uniqueCurves = [];
+    
+    originalCurves.forEach(curve => {
+        // Create a key based on curve name and points
+        const pointsKey = curve.points.map(p => `${p[0].toFixed(2)},${p[1].toFixed(2)},${p[2].toFixed(2)}`).join('|');
+        const key = `${curve.name}:${pointsKey}`;
+        
+        if (!seen.has(key)) {
+            seen.set(key, true);
+            uniqueCurves.push(curve);
+        }
+    });
+    
+    console.log(`Filtered ${originalCurves.length} original curves down to ${uniqueCurves.length} unique curves`);
+    
+    uniqueCurves.forEach((curve, idx) => {
+        text += `curve: ${curve.name}\n`;
+        curve.points.forEach(point => {
+            // Format to 2 decimals with space after commas
+            text += `${point[0].toFixed(2)}, ${point[1].toFixed(2)}, ${point[2].toFixed(2)}\n`;
+        });
+        // Add blank line between curves except after last one
+        if (idx < uniqueCurves.length - 1) {
+            text += '\n';
+        }
+    });
+    
+    return text;
+}
+
 let kayakToDelete = null;
 
 function openDeleteModal(kayakName) {
@@ -557,8 +668,38 @@ function closeDeleteModal() {
 }
 
 function closeCreateModal() {
-    document.getElementById('createModal').classList.remove('show');
-    document.getElementById('createHullForm').reset();
+    const modal = document.getElementById('createModal');
+    const form = document.getElementById('createHullForm');
+    
+    // Reset button state
+    const submitBtn = form.querySelector('.btn-primary');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Kayak';
+    }
+    
+    modal.classList.remove('show');
+    form.reset();
+    
+    // Refresh the kayak list when modal closes
+    loadKayakList();
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    const form = document.getElementById('editHullForm');
+    
+    // Reset button state
+    const submitBtn = form.querySelector('.btn-primary');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Update Kayak';
+    }
+    
+    modal.classList.remove('show');
+    form.reset();
+    editingKayakName = null;
+    
     // Refresh the kayak list when modal closes
     loadKayakList();
 }
@@ -566,10 +707,14 @@ function closeCreateModal() {
 // Close modal when clicking outside
 window.addEventListener('click', (event) => {
     const createModal = document.getElementById('createModal');
+    const editModal = document.getElementById('editModal');
     const deleteModal = document.getElementById('deleteModal');
     
     if (event.target === createModal) {
         closeCreateModal();
+    }
+    if (event.target === editModal) {
+        closeEditModal();
     }
     if (event.target === deleteModal) {
         closeDeleteModal();
@@ -656,6 +801,9 @@ function parseCurvesData(text) {
 async function handleCreateHull(e) {
     e.preventDefault();
     
+    const submitBtn = e.target.querySelector('.btn-primary');
+    let success = false;
+    
     try {
         // Get form values
         const name = document.getElementById('hullName').value.trim();
@@ -670,7 +818,7 @@ async function handleCreateHull(e) {
         const curves = parseCurvesData(curvesText);
         
         if (curves.length === 0) {
-            alert('Please enter at least one curve with points');
+            showNotification('Please enter at least one curve with points', 'error');
             return;
         }
         
@@ -686,8 +834,6 @@ async function handleCreateHull(e) {
         };
         
         // Show loading state
-        const submitBtn = e.target.querySelector('.btn-primary');
-        const originalText = submitBtn.textContent;
         submitBtn.disabled = true;
         submitBtn.textContent = 'Creating...';
         
@@ -701,27 +847,143 @@ async function handleCreateHull(e) {
         });
         
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to create kayak');
+            let errorMessage = 'Failed to create kayak';
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    errorMessage = errorData.detail || errorMessage;
+                } else {
+                    const errorText = await response.text();
+                    errorMessage = `Server error (${response.status}): ${errorText.substring(0, 100)}`;
+                }
+            } catch (e) {
+                errorMessage = `Server error (${response.status})`;
+            }
+            throw new Error(errorMessage);
         }
         
         const result = await response.json();
-        console.log('Kayak created:', result);
+        
+        success = true;
+        
+        // Show success notification
+        showNotification(`Kayak "${name}" created successfully!`, 'success');
         
         // Close modal (this will refresh the list automatically)
         closeCreateModal();
         
-        // Show success message
-        alert(`Kayak "${name}" created successfully!`);
-        
     } catch (error) {
         console.error('Error creating kayak:', error);
-        alert(`Error creating kayak: ${error.message}`);
+        showNotification(`Error creating kayak: ${error.message}`, 'error');
+    } finally {
+        // Always restore button if creation wasn't successful
+        if (!success && submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Kayak';
+        }
+    }
+}
+
+// Handle edit form submission
+async function handleEditHull(e) {
+    e.preventDefault();
+    
+    if (!editingKayakName) {
+        showNotification('No kayak selected for editing', 'error');
+        return;
+    }
+    
+    const submitBtn = e.target.querySelector('.btn-primary');
+    let success = false;
+    
+    try {
+        // Get form values
+        const name = document.getElementById('editHullName').value.trim();
+        const description = document.getElementById('editHullDescription').value.trim() || null;
+        const units = document.getElementById('editHullUnits').value;
+        const targetWaterline = document.getElementById('editTargetWaterline').value;
+        const targetPayload = document.getElementById('editTargetPayload').value;
+        const targetWeight = document.getElementById('editTargetWeight').value;
+        const curvesText = document.getElementById('editCurvesData').value;
         
-        // Restore button
-        const submitBtn = e.target.querySelector('.btn-primary');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Create Kayak';
+        // Parse curves
+        const curves = parseCurvesData(curvesText);
+        
+        if (curves.length === 0) {
+            showNotification('Please enter at least one curve with points', 'error');
+            return;
+        }
+        
+        // Build request body
+        const requestBody = {
+            name: name,
+            description: description,
+            units: units,
+            target_waterline: targetWaterline ? parseFloat(targetWaterline) : null,
+            target_payload: targetPayload ? parseFloat(targetPayload) : null,
+            target_weight: targetWeight ? parseFloat(targetWeight) : null,
+            curves: curves
+        };
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Updating...';
+        
+        // Make PUT request
+        const response = await fetch(`${API_BASE}/hulls/${editingKayakName}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+            let errorMessage = 'Failed to update kayak';
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    errorMessage = errorData.detail || errorMessage;
+                } else {
+                    const errorText = await response.text();
+                    console.error('Error response text:', errorText);
+                    errorMessage = `Server error (${response.status}): ${errorText.substring(0, 100)}`;
+                }
+            } catch (e) {
+                console.error('Error parsing error response:', e);
+                errorMessage = `Server error (${response.status})`;
+            }
+            throw new Error(errorMessage);
+        }
+        
+        const result = await response.json();
+        
+        success = true;
+        
+        // Show success notification
+        showNotification(`Kayak "${name}" updated successfully!`, 'success');
+        
+        // If the updated kayak was selected, reload its details
+        if (selectedKayak && selectedKayak.name === editingKayakName) {
+            selectedKayak = result;
+            hullDetails = null;
+            loadHullDetailsForVisualization();
+        }
+        
+        // Close modal (this will refresh the list automatically)
+        closeEditModal();
+        
+    } catch (error) {
+        console.error('Error updating kayak:', error);
+        showNotification(`Error updating kayak: ${error.message}`, 'error');
+    } finally {
+        // Always restore button if update wasn't successful
+        if (!success && submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Update Kayak';
+        }
     }
 }
 
@@ -1411,10 +1673,16 @@ function drawProfile() {
     const drawWidth = canvas.width - 2 * padding;
     const drawHeight = canvas.height - 2 * padding;
     
-    // Calculate scale (maintain aspect ratio)
-    const rangeY = maxY - minY || 1;
-    const rangeZ = maxZ - minZ || 1;
-    const scale = Math.min(drawWidth / rangeY, drawHeight / rangeZ) * 0.9;
+    // Calculate scale using fixed beam and depth for all profiles
+    // This ensures all profiles are drawn at the same scale for comparison
+    const rangeY = beam;  // Full beam width (already maxY - minY)
+    const rangeZ = depth; // Full depth (already maxZ - minZ)
+    
+    // Calculate scale for each dimension and use the most restrictive
+    const scaleY = drawWidth / rangeY;
+    const scaleZ = drawHeight / rangeZ;
+    const scale = Math.min(scaleY, scaleZ) * 0.85;
+    
     // Center the drawing
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
