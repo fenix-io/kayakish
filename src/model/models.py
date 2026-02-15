@@ -10,25 +10,26 @@ from pydantic import BaseModel, Field
 class CurveModel(BaseModel):
     name: str
     mirrored: bool | None = False
-    points: List[Tuple[float, float, float]] 
+    points: List[Tuple[float, float, float]]
+
 
 class ProfileModel(BaseModel):
-    station: float = 0.0   
+    station: float = 0.0
     points: List[Tuple[float, float, float]] = Field(default_factory=list)
-    
+
+
 class CreateHullModel(BaseModel):
     name: str
     description: str | None = None
     target_waterline: float | None = None
     target_payload: float | None = None
     target_weight: float | None = None
-    curves: List[CurveModel] = Field(default_factory=list) 
-    
+    curves: List[CurveModel] = Field(default_factory=list)
+
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    
                     "name": "Kayak 001",
                     "description": "Kayak 001",
                     "target_waterline": 0.1,
@@ -43,8 +44,8 @@ class CreateHullModel(BaseModel):
                                 [2.00, 0.30, 0.28],
                                 [3.00, 0.30, 0.28],
                                 [4.00, 0.14, 0.28],
-                                [5.00, 0.00, 0.30]
-                            ]
+                                [5.00, 0.00, 0.30],
+                            ],
                         },
                         {
                             "name": "starboard chime",
@@ -54,8 +55,8 @@ class CreateHullModel(BaseModel):
                                 [2.00, 0.22, 0.11],
                                 [3.00, 0.22, 0.11],
                                 [4.00, 0.10, 0.12],
-                                [4.70, 0.00, 0.16]
-                            ]
+                                [4.70, 0.00, 0.16],
+                            ],
                         },
                         {
                             "name": "keel",
@@ -65,14 +66,15 @@ class CreateHullModel(BaseModel):
                                 [0.50, 0.00, 0.00],
                                 [4.20, 0.00, 0.00],
                                 [4.70, 0.00, 0.16],
-                                [5.00, 0.00, 0.30]
-                            ]
-                        }                      
-                    ]
+                                [5.00, 0.00, 0.30],
+                            ],
+                        },
+                    ],
                 }
             ]
         }
     }
+
 
 class HullSummaryModel(BaseModel):
     name: str | None = None
@@ -108,12 +110,11 @@ class HullModel(BaseModel):
     max_y: float | None = None
     min_z: float | None = None
     max_z: float | None = None
-    
+
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    
                     "name": "Kayak 001",
                     "description": "Kayak 001",
                     "target_waterline": 0.1,
@@ -133,7 +134,7 @@ class HullModel(BaseModel):
                     "min_y": -0.300,
                     "max_y": 0.300,
                     "min_z": 0.000,
-                    "max_z": 0.300,   
+                    "max_z": 0.300,
                     "curves": [
                         {
                             "name": "starboard gunnel",
@@ -143,8 +144,8 @@ class HullModel(BaseModel):
                                 [2.00, 0.30, 0.28],
                                 [3.00, 0.30, 0.28],
                                 [4.00, 0.14, 0.28],
-                                [5.00, 0.00, 0.30]
-                            ]
+                                [5.00, 0.00, 0.30],
+                            ],
                         },
                         {
                             "name": "starboard chime",
@@ -154,8 +155,8 @@ class HullModel(BaseModel):
                                 [2.00, 0.22, 0.11],
                                 [3.00, 0.22, 0.11],
                                 [4.00, 0.10, 0.12],
-                                [4.70, 0.00, 0.16]
-                            ]
+                                [4.70, 0.00, 0.16],
+                            ],
                         },
                         {
                             "name": "keel",
@@ -165,28 +166,31 @@ class HullModel(BaseModel):
                                 [0.50, 0.00, 0.00],
                                 [4.20, 0.00, 0.00],
                                 [4.70, 0.00, 0.16],
-                                [5.00, 0.00, 0.30]
-                            ]
-                        }                      
+                                [5.00, 0.00, 0.30],
+                            ],
+                        },
                     ],
-                    "profiles" : []
+                    "profiles": [],
                 }
             ]
         }
-    }    
+    }
+
 
 class StabilityPointModel(BaseModel):
     angle: float | None = None
-    gz: float| None = None
-    moment: float| None = None
-    waterline: float| None = None
+    gz: float | None = None
+    moment: float | None = None
+    waterline: float | None = None
     displacement: float | None = None
-    
+
+
 class StabilityAnalysisResultModel(BaseModel):
     vanishing_angle: float | None = None
     max_moment: float | None = None
     max_moment_angle: float | None = None
     stability_points: List[StabilityPointModel] = Field(default_factory=list)
+
 
 class StabilityAnalysisModel(BaseModel):
     hull_name: str

@@ -108,6 +108,12 @@ An angular edge or corner in the hull cross-section, as opposed to a smooth roun
 **Context:** Hull Design  
 **Related Terms:** Profile, Cross-Section, Hull Shape
 
+### Chord Length Parametrization
+A method of parametrizing a spline curve by the cumulative Euclidean distance (chord length) between consecutive control points. Used when the curve is not monotonic in x (e.g., bow/stern sections that double back). Allows evaluation at any x-coordinate using root-finding (Brent's method).
+
+**Context:** Geometry, Spline Interpolation  
+**Related Terms:** Spline, PCHIP, Control Points, Parametrization
+
 ### Cockpit
 The opening in the deck where the paddler sits. The cockpit area typically has the maximum beam width.
 
@@ -116,10 +122,10 @@ The opening in the deck where the paddler sits. The cockpit area typically has t
 
 ### Coordinate System
 The reference frame used to define positions on the kayak:
-- **x-axis:** Longitudinal (bow to stern)
-- **y-axis:** Transverse (port to starboard)
-- **z-axis:** Vertical (down to up)
-- **Origin:** Typically on the centerline at a reference waterline
+- **x-axis:** Longitudinal, stern (x=0) to bow (positive x)
+- **y-axis:** Transverse, centerline (y=0) to starboard (positive y), port is negative y
+- **z-axis:** Vertical, deepest hull point (z=0) upward (positive z)
+- **Origin:** On the centerline, at the stern projection, at the deepest hull point
 
 **Context:** Geometry, Mathematics  
 **Related Terms:** Axes, Origin, Station
@@ -129,6 +135,13 @@ A slice through the hull perpendicular to the longitudinal axis, showing the pro
 
 **Context:** Geometry  
 **Related Terms:** Profile, Station, Transverse
+
+### Curve
+A named hull curve defined by a series of 3D control points, extending the Spline3D class. Each curve represents a longitudinal feature of the hull (e.g., keel, chine, gunwale). Curves carry a `mirrored` flag indicating whether they were auto-generated as a port/starboard mirror during the hull build process.
+
+**Code class:** `Curve` in `src/geometry/curve.py`  
+**Context:** Geometry, Hull Definition  
+**Related Terms:** Spline, Control Points, Mirrored, Profile
 
 ---
 
@@ -260,6 +273,14 @@ The study of fluids at rest and the forces on objects submerged in or floating o
 **Context:** Physics, Analysis  
 **Related Terms:** Buoyancy, Displacement, Flotation
 
+### Hull File Format (.hull)
+The JSON file format used by Kayakish to persist hull definitions on disk. Contains all hull metadata, curve definitions, and computed properties. Files are stored in the configured `DATA_PATH` directory and named using a sanitized version of the hull name.
+
+**Extension:** `.hull`  
+**Format:** JSON  
+**Context:** Data Persistence, I/O  
+**Related Terms:** Hull, Curve, sanitize_filename
+
 ---
 
 ## I
@@ -277,16 +298,16 @@ See **Heel**
 ### Integration
 Numerical methods used to calculate volumes, areas, and centroids by summing contributions from discrete sections or elements.
 
-**Methods:** Simpson's Rule, Trapezoidal Rule  
+**Methods used:** Shoelace Formula (area), Slab Integration (volume)  
 **Context:** Mathematics, Calculation  
-**Related Terms:** Numerical Integration, Simpson's Rule, Volume Calculation
+**Related Terms:** Numerical Integration, Shoelace Formula, Slab Integration, Volume Calculation
 
 ### Interpolation
-Mathematical techniques for estimating values between known data points. Used extensively to create smooth hull surfaces from discrete profile data.
+Mathematical techniques for estimating values between known data points. Used extensively to create smooth hull curves from discrete control points.
 
-**Types:** Linear, Cubic, Spline  
+**Types used:** PCHIP (primary, shape-preserving), CubicSpline (chord-length parametrization), Linear (waterline intersection)  
 **Context:** Geometry, Mathematics  
-**Related Terms:** Linear Interpolation, Cubic Interpolation, Smoothing
+**Related Terms:** PCHIP, Cubic Interpolation, Spline, Smoothing
 
 ---
 
@@ -397,18 +418,18 @@ An array of points defining bow or stern geometry at multiple vertical levels (e
 ### Numerical Integration
 Mathematical techniques for approximating definite integrals using discrete sampling. Essential for calculating hull properties from profile data.
 
-**Methods:** Simpson's Rule, Trapezoidal Rule, Midpoint Rule  
+**Methods used:** Shoelace Formula (cross-section area), Slab method (volume = area × step width)  
 **Context:** Mathematics, Computation  
-**Related Terms:** Integration, Simpson's Rule, Volume Calculation
+**Related Terms:** Integration, Shoelace Formula, Slab Integration, Volume Calculation
 
 ---
 
 ## O
 
 ### Origin
-The reference point (0, 0, 0) in the coordinate system. Typically placed on the centerline at a convenient longitudinal position (often amidships) at a reference waterline or keel.
+The reference point (0, 0, 0) in the coordinate system. Placed on the centerline at the stern projection, at the deepest hull point (keel).
 
-**Coordinates:** (0, 0, 0)  
+**Coordinates:** (0, 0, 0) = (stern, centerline, keel bottom)  
 **Context:** Coordinate System  
 **Related Terms:** Coordinate System, Reference Point
 
@@ -420,7 +441,14 @@ The reference point (0, 0, 0) in the coordinate system. Typically placed on the 
 The person operating the kayak. The paddler's weight and position significantly affect the center of gravity and thus stability.
 
 **Context:** Loading, Mass Distribution  
-**Related Terms:** CG, Mass, Seating Position
+**Related Terms:** CG, Mass, Seating Position, Target Payload
+
+### PCHIP (Piecewise Cubic Hermite Interpolating Polynomial)
+A shape-preserving interpolation method that avoids overshoots between data points. Used as the primary interpolation method for hull curves when x-coordinates are monotonically increasing. Unlike standard cubic splines, PCHIP preserves monotonicity of the data.
+
+**Implementation:** `scipy.interpolate.PchipInterpolator`  
+**Context:** Geometry, Spline Interpolation  
+**Related Terms:** Spline, Interpolation, Chord Length Parametrization, CubicSpline
 
 ### Pitch
 Rotation about the transverse (y) axis, causing the bow to rise or fall relative to the stern.
@@ -436,10 +464,10 @@ The left side of the kayak when facing forward (toward the bow). In the coordina
 **Related Terms:** Starboard, Left, Transverse
 
 ### Profile
-A cross-sectional shape of the hull at a particular longitudinal station. Defined by a series of points representing the hull contour.
+A cross-sectional shape of the hull at a particular longitudinal station. In Kayakish, profiles are **auto-generated** by evaluating all spline curves at a given x-coordinate during the build process. Users define curves (not profiles directly), and the system creates profiles at regular 0.05 m intervals.
 
 **Context:** Geometry, Hull Definition  
-**Related Terms:** Cross-Section, Station, Points
+**Related Terms:** Cross-Section, Station, Curve, Spline
 
 ### Point Cloud
 A collection of 3D points representing the hull surface geometry.
@@ -508,10 +536,34 @@ The curve of the deck edge (gunwale) from bow to stern when viewed from the side
 **Related Terms:** Gunwale, Deck, Profile
 
 ### Simpson's Rule
-A numerical integration method that fits parabolas through groups of three points. More accurate than the trapezoidal rule for smooth curves.
+A classical numerical integration method that fits parabolas through groups of three points. More accurate than the trapezoidal rule for smooth curves.
 
 **Context:** Mathematics, Integration  
-**Related Terms:** Numerical Integration, Trapezoidal Rule, Volume Calculation
+**Related Terms:** Numerical Integration, Trapezoidal Rule, Volume Calculation  
+**Note:** *Not currently used in the application. The codebase uses the Shoelace Formula for area and Slab Integration for volume.*
+
+### Shoelace Formula
+A mathematical algorithm for computing the area of a simple polygon given its vertex coordinates. Used in Kayakish to calculate the cross-sectional area of hull profiles from their y,z point coordinates.
+
+**Formula:** Area = ½ |Σ(yᵢ·zᵢ₊₁ − zᵢ·yᵢ₊₁)|  
+**Code:** `Profile.calculate_area()` in `src/geometry/profile.py`  
+**Context:** Mathematics, Area Calculation  
+**Related Terms:** Profile, Area, Integration, Centroid
+
+### Slab Integration
+A volume calculation method that approximates the hull volume by summing thin longitudinal slabs. Each slab's volume equals the cross-sectional area at that station multiplied by the slab width (step size, typically 0.05 m).
+
+**Formula:** Volume ≈ Σ(Areaᵢ × step)  
+**Code:** `Profile.calculate_volume_and_cg()` in `src/geometry/profile.py`  
+**Context:** Mathematics, Volume Calculation  
+**Related Terms:** Integration, Shoelace Formula, Profile, Volume
+
+### Spline (Spline3D)
+A parametric 3D curve fitted through a set of control points using piecewise polynomial interpolation. The core geometric primitive in Kayakish. Supports two parametrization modes: x-based (using PCHIP for monotonic curves) and chord-length (using CubicSpline for non-monotonic curves). Provides methods for evaluation, sampling, tangent/curvature/normal computation, and rotation.
+
+**Code class:** `Spline3D` in `src/geometry/spline.py`  
+**Context:** Geometry, Interpolation  
+**Related Terms:** Curve, PCHIP, Chord Length Parametrization, Control Points
 
 ### Stability
 The tendency of the kayak to return to upright position after being heeled. Determined by the relationship between the centers of gravity and buoyancy.
@@ -573,6 +625,30 @@ Most kayak hulls are symmetric about the centerline (port and starboard sides ar
 
 ## T
 
+### Target Payload
+The mass of the paddler plus any gear or cargo, specified in kilograms. Used together with `target_weight` (hull mass) to determine the total mass for waterline equilibrium calculations.
+
+**Units:** kilograms (kg)  
+**Code field:** `Hull.target_payload`  
+**Context:** Loading, Hydrostatics  
+**Related Terms:** Target Weight, Weight, Paddler, Displacement
+
+### Target Waterline
+The initial estimated waterline height (z-coordinate) used as a starting point for the iterative waterline convergence algorithm. The algorithm adjusts this value until the displaced volume matches the total weight.
+
+**Units:** meters (m)  
+**Code field:** `Hull.target_waterline`  
+**Context:** Hydrostatics, Calculation  
+**Related Terms:** Waterline, Displacement, Equilibrium
+
+### Target Weight
+The mass of the empty hull (without paddler or cargo), specified in kilograms. Combined with `target_payload` to determine total system mass for equilibrium waterline computation.
+
+**Units:** kilograms (kg)  
+**Code field:** `Hull.target_weight`  
+**Context:** Loading, Hydrostatics  
+**Related Terms:** Target Payload, Weight, Hull, Displacement
+
 ### TCB (Transverse Center of Buoyancy)
 The y-coordinate of the center of buoyancy. For a symmetric hull upright in calm water, TCB = 0 (on the centerline).
 
@@ -615,10 +691,11 @@ Direction perpendicular to the kayak's length, from port to starboard. Parallel 
 **Related Terms:** y-axis, Beam, Port/Starboard
 
 ### Trapezoidal Rule
-A numerical integration method that approximates the area under a curve by dividing it into trapezoids. Simpler but less accurate than Simpson's Rule.
+A classical numerical integration method that approximates the area under a curve by dividing it into trapezoids. Simpler but less accurate than Simpson's Rule.
 
 **Context:** Mathematics, Integration  
-**Related Terms:** Numerical Integration, Simpson's Rule, Area Calculation
+**Related Terms:** Numerical Integration, Simpson's Rule, Area Calculation  
+**Note:** *Not currently used in the application. The codebase uses the Shoelace Formula for area and Slab Integration for volume.*
 
 ### Trim
 The orientation of the kayak in the longitudinal direction. A kayak is "in trim" when bow and stern sit at the designed waterline. "Down by the bow" means bow is lower; "down by the stern" means stern is lower.
@@ -851,9 +928,11 @@ The vertical axis running from bottom (negative z) to top (positive z). Typicall
 - **ASTM F1166**: Standard specification for recreational kayaks
 
 ### Calculation Methods
-- **Simpson's 1/3 Rule**: For numerical integration
-- **Trapezoidal Rule**: For simple numerical integration
+- **Shoelace Formula**: For cross-section area calculation
+- **Slab Integration**: For volume computation (area × step width)
+- **PCHIP Interpolation**: For shape-preserving curve fitting
 - **Archimedes' Principle**: Foundation for buoyancy calculations
+- **Brent's Method (brentq)**: For root-finding in curve evaluation
 
 ---
 
@@ -877,6 +956,7 @@ The vertical axis running from bottom (negative z) to top (positive z). Typicall
 
 **Version History:**
 - v1.0 (2025-12-26): Initial comprehensive glossary
+- v1.1 (2026-02-14): Cross-referenced with codebase; fixed coordinate system, integration methods, interpolation types, and profile definition
 
 **Maintenance:**
 - Update glossary when new terms are introduced
@@ -889,4 +969,4 @@ The vertical axis running from bottom (negative z) to top (positive z). Typicall
 
 ---
 
-*This glossary is part of the Kayak Calculation Tool documentation. For usage examples, see the USER_GUIDE.md and example scripts.*
+*This glossary is part of the Kayakish documentation. For usage examples, see the [User Guide](User_Guide.md) and [example scripts](../test/scripts/).*

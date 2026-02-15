@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from src.routes.hull import router 
+from src.routes.hull import router
 
 app = FastAPI()
 
@@ -17,5 +17,6 @@ visualization_dir = Path(__file__).parent.parent / "visualization"
 if visualization_dir.exists():
     app.mount("/", StaticFiles(directory=str(visualization_dir), html=True), name="visualization")
 else:
-    print(f"Warning: Visualization directory '{visualization_dir}' not found. Static files will not be served.")
-
+    print(
+        f"Warning: Visualization directory '{visualization_dir}' not found. Static files will not be served."
+    )

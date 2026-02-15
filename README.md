@@ -36,7 +36,7 @@ docker-compose up -d
 open http://localhost:8080
 ```
 
-For detailed Docker deployment instructions, see [DOCKER.md](DOCKER.md).
+For detailed Docker deployment instructions, see [Docker Guide](docs/Docker.md).
 
 ### Option 2: Local Development
 
@@ -202,8 +202,6 @@ kayakish/
 ├── Makefile                    # Development & operations commands
 ├── pyproject.toml              # Project metadata & tool config
 ├── requirements.txt            # Python dependencies
-├── DOCKER.md                   # Docker deployment guide
-├── GLOSSARY.md                 # Naval architecture glossary
 └── README.md                   # This file
 ```
 
@@ -232,8 +230,9 @@ kayakish/
 |----------|-------------|
 | [Architecture](docs/Architecture.md) | System architecture, components, data flow, and design decisions |
 | [User Guide](docs/User_Guide.md) | How to create hulls, run stability analysis, and view profiles |
-| [Docker Guide](DOCKER.md) | Docker deployment, configuration, and operations |
-| [Glossary](GLOSSARY.md) | Naval architecture and hydrostatics terminology |
+| [Docker Guide](docs/Docker.md) | Docker deployment, configuration, and operations |
+| [Glossary](docs/Glossary.md) | Naval architecture and hydrostatics terminology |
+| [Test Suite Summary](docs/Test_suite_summary.md) | Comprehensive unit test documentation and coverage details |
 
 ---
 

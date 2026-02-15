@@ -30,7 +30,7 @@ class TestAddPoint:
         """Test adding a single point to the profile."""
         profile = Profile(station=1.0)
         profile.add_point(1.0, 0.5, 0.3)
-        
+
         assert len(profile.data_points) == 1
         assert profile.data_points[0].x == 1.0
         assert profile.data_points[0].y == 0.5
@@ -42,7 +42,7 @@ class TestAddPoint:
         profile.add_point(1.0, 0.0, 0.5)
         profile.add_point(1.0, 0.2, 0.4)
         profile.add_point(1.0, 0.3, 0.3)
-        
+
         assert len(profile.data_points) == 3
         assert profile.data_points[1].y == 0.2
         assert profile.data_points[2].z == 0.3
@@ -63,7 +63,7 @@ class TestGetPoints:
         profile = Profile()
         profile.add_point(1.0, 0.5, 0.3)
         profile.add_point(1.0, 0.3, 0.2)
-        
+
         points = profile.get_points()
         assert len(points) == 2
         assert points[0].y == 0.5
@@ -84,7 +84,7 @@ class TestToJson:
         profile = Profile()
         profile.add_point(1.0, 0.5, 0.3)
         profile.add_point(1.0, 0.2, 0.1)
-        
+
         json_data = profile.to_json()
         assert "points" in json_data
         assert len(json_data["points"]) == 2
@@ -107,9 +107,9 @@ class TestSortPoints:
         profile.add_point(1.0, 0.0, 0.1)
         profile.add_point(1.0, 0.0, 0.5)
         profile.add_point(1.0, 0.0, 0.3)
-        
+
         profile.sort_points()
-        
+
         assert profile.data_points[0].z == 0.5
         assert profile.data_points[1].z == 0.3
         assert profile.data_points[2].z == 0.1
@@ -120,9 +120,9 @@ class TestSortPoints:
         profile.add_point(1.0, 0.1, 0.5)
         profile.add_point(1.0, 0.3, 0.5)
         profile.add_point(1.0, 0.2, 0.5)
-        
+
         profile.sort_points()
-        
+
         # With reverse=True and -y, smaller y values come first
         assert profile.data_points[0].y == 0.1
         assert profile.data_points[1].y == 0.2
@@ -135,9 +135,9 @@ class TestSortPoints:
         profile.add_point(1.0, 0.1, 0.5)
         profile.add_point(1.0, 0.3, 0.3)
         profile.add_point(1.0, 0.2, 0.5)
-        
+
         profile.sort_points()
-        
+
         # Highest z first, then by smaller y (because of -y with reverse=True)
         assert profile.data_points[0].z == 0.5
         assert profile.data_points[0].y == 0.1
@@ -161,9 +161,9 @@ class TestAutoCompleteStarboard:
         profile = Profile()
         profile.add_point(1.0, 0.0, 0.5)
         profile.add_point(1.0, 0.0, 0.3)
-        
+
         profile.auto_complete_starboard()
-        
+
         # Should not add starboard points for centerline
         assert len(profile.data_points) == 2
 
@@ -173,13 +173,13 @@ class TestAutoCompleteStarboard:
         profile.add_point(1.0, 0.0, 0.5)
         profile.add_point(1.0, 0.2, 0.4)
         profile.add_point(1.0, 0.3, 0.3)
-        
+
         initial_count = len(profile.data_points)
         profile.auto_complete_starboard()
-        
+
         # Should add 2 mirrored points (0.2 and 0.3, but not 0.0)
         assert len(profile.data_points) == initial_count + 2
-        
+
         # Check mirrored points are added
         starboard_points = [p for p in profile.data_points if p.y < 0]
         assert len(starboard_points) == 2
@@ -192,9 +192,9 @@ class TestAutoCompleteStarboard:
         profile.add_point(1.0, 0.0, 0.5)
         profile.add_point(1.0, 0.1, 0.4)
         profile.add_point(1.0, 0.2, 0.3)
-        
+
         profile.auto_complete_starboard()
-        
+
         # Last two points should be starboard in reverse order
         assert profile.data_points[-2].y == -0.2
         assert profile.data_points[-1].y == -0.1
@@ -225,9 +225,9 @@ class TestAutoCompleteCircular:
         profile.add_point(2.0, 0.2, 0.0)
         profile.add_point(2.0, -0.2, 0.0)
         profile.add_point(2.0, -0.2, 0.4)
-        
+
         profile.auto_complete_circular()
-        
+
         # Should generate points (360/3 = 120 angles)
         assert len(profile.points) > 0
         # Check that generated points use the profile station
@@ -241,13 +241,13 @@ class TestAutoCompleteCircular:
         profile.add_point(1.0, 0.1, 0.3)
         profile.add_point(1.0, 0.1, 0.1)
         profile.add_point(1.0, -0.1, 0.1)
-        
+
         # Center should be at (0, 0.2)
         expected_center_y = 0.0
         expected_center_z = 0.2
-        
+
         profile.auto_complete_circular()
-        
+
         # Verify points are generated around the center
         assert len(profile.points) > 0
 
@@ -260,9 +260,9 @@ class TestAutoCompleteCircular:
             y = 0.2 * np.cos(angle)
             z = 0.2 + 0.2 * np.sin(angle)
             profile.add_point(1.0, y, z)
-        
+
         profile.auto_complete_circular()
-        
+
         # Should generate 360/3 = 120 points
         # Note: some may not intersect, so check for reasonable number
         assert len(profile.points) > 0
@@ -274,20 +274,20 @@ class TestProfileIntegration:
     def test_full_workflow_port_to_complete_profile(self):
         """Test complete workflow: add port points, sort, complete starboard."""
         profile = Profile(station=3.0)
-        
+
         # Add port side points in random order
         profile.add_point(3.0, 0.3, 0.2)
         profile.add_point(3.0, 0.0, 0.5)
         profile.add_point(3.0, 0.2, 0.4)
-        
+
         # Sort
         profile.sort_points()
         assert profile.data_points[0].z == 0.5
-        
+
         # Complete starboard
         profile.auto_complete_starboard()
         assert len(profile.data_points) == 5  # 3 original + 2 mirrored
-        
+
         # Check symmetry
         port_points = [p for p in profile.data_points if p.y > 0]
         starboard_points = [p for p in profile.data_points if p.y < 0]
@@ -300,6 +300,6 @@ class TestProfileIntegration:
         profile.add_point(1.0, 0.1, 0.4)
         profile.sort_points()
         profile.auto_complete_starboard()
-        
+
         json_data = profile.to_json()
         assert len(json_data["points"]) == 4  # 2 original + 2 mirrored

@@ -242,7 +242,7 @@ All coordinates follow a right-hand orthogonal system:
 | Axis | Direction | Reference |
 |------|-----------|-----------|
 | **x** | Stern → Bow (longitudinal) | 0 at the stern projection on centerline |
-| **y** | Centerline → Port (positive), Centerline → Starboard (negative) | 0 at the centerline |
+| **y** | Centerline → Starboard (positive), Centerline → Port (negative) | 0 at the centerline |
 | **z** | Bottom → Top (vertical) | 0 at the deepest hull point |
 
 The system assumes **port/starboard symmetry**: only starboard (or port) curves need to be defined; the mirror is generated automatically during the build process. The keel curve (y = 0) is not mirrored.
@@ -379,8 +379,6 @@ kayakish/
 ├── Makefile                    # Dev/ops commands
 ├── pyproject.toml              # Project metadata & tool config
 ├── requirements.txt            # Python dependencies
-├── DOCKER.md                   # Docker deployment guide
-├── GLOSSARY.md                 # Naval architecture terminology
 └── README.md                   # Project overview
 ```
 

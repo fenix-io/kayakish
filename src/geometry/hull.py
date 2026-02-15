@@ -5,6 +5,7 @@ from src.geometry.profile import Profile
 from src.geometry.point import Point3D
 from src.geometry.curve import Curve
 
+
 class Hull:
     name: str
     description: str | None = None
@@ -13,11 +14,11 @@ class Hull:
     target_payload: float | None = None
     waterline: float | None = None
     file_name: str | None = None
-    
+
     def __init__(self):
         self.curves: list[Curve] = []
         self.profiles: list[Profile] = []
-    
+
     def _add_spline(self, spline: Curve):
         self.curves.append(spline)
 
@@ -28,8 +29,8 @@ class Hull:
         return self.max_x - self.min_x
 
     def beam(self):
-        return (self.max_y - self.min_y)
-    
+        return self.max_y - self.min_y
+
     def depth(self):
         return self.max_z - self.min_z
 
@@ -73,12 +74,12 @@ class Hull:
         self.target_weight = data.get("target_weight", 100)
         self.target_payload = data.get("target_payload", 100)
 
-        self.min_x = float('inf')
-        self.max_x = float('-inf')
-        self.min_y = float('inf')
-        self.max_y = float('-inf')
-        self.min_z = float('inf')
-        self.max_z = float('-inf')
+        self.min_x = float("inf")
+        self.max_x = float("-inf")
+        self.min_y = float("inf")
+        self.max_y = float("-inf")
+        self.min_z = float("inf")
+        self.max_z = float("-inf")
 
         for spline_data in data.get("curves", []):
             name = spline_data["name"] = spline_data.get("name", "Unnamed Curve")
@@ -92,25 +93,25 @@ class Hull:
                 y += point[1]
 
             spline = Curve(name, points, mirrored=False)
-            self._add_spline(spline)  
+            self._add_spline(spline)
             if y != 0:
                 for point in spline_data.get("points", []):
                     p = Point3D(point[0], -point[1], point[2])
                     self._update_min_max(p)
                     oposite.append(p)
-                
+
                 spline_oposite = Curve("Mirror of " + name, oposite, mirrored=True)
                 self._add_spline(spline_oposite)
-            
+
         volume, cg = self._calculate_profiles_volume_and_cg()
         self.volume = volume
-        self.cg = cg   
+        self.cg = cg
         weight = self.target_payload + self.target_weight
         waterline, cb, displacement = self._calculate_waterline(weight, angle=0.0)
         self.waterline = waterline
         self.cb = cb
         self.displacement = displacement
-            
+
     def _calculate_profiles_volume_and_cg(self):
         x = self.min_x
         step = 0.05
@@ -128,28 +129,28 @@ class Hull:
                         volumes.append(volume)
                         cgs.append(cg)
             x += step
-        
+
         self.profiles = profiles  # Store profiles for potential visualization or further analysis
-            
+
         # Calculate total volume
         volume = sum(volumes)
-        
+
         # Calculate weighted CG
         cgx = 0.0
         cgy = 0.0
-        cgz = 0.0   
+        cgz = 0.0
         for i in range(len(volumes)):
-            cgx += (volumes[i] * cgs[i].x)
-            cgy += (volumes[i] * cgs[i].y)
-            cgz += (volumes[i] * cgs[i].z)
-        
+            cgx += volumes[i] * cgs[i].x
+            cgy += volumes[i] * cgs[i].y
+            cgz += volumes[i] * cgs[i].z
+
         # Divide by total volume
         cgx /= volume
         cgy /= volume
         cgz /= volume
-        
+
         self.volume = volume
-        self.cg = Point3D(cgx, cgy, cgz)    
+        self.cg = Point3D(cgx, cgy, cgz)
         return volume, Point3D(cgx, cgy, cgz)
 
     def _update_min_max(self, point: Point3D):
@@ -166,7 +167,10 @@ class Hull:
         if point.z > self.max_z:
             self.max_z = point.z
 
-    def _get_points_at(self, x: float, ) -> list[Point3D]:
+    def _get_points_at(
+        self,
+        x: float,
+    ) -> list[Point3D]:
         points = []
         for curve in self.curves:
             try:
@@ -174,11 +178,11 @@ class Hull:
                 points.append(point)
             except ValueError:
                 continue
-        return points            
+        return points
 
     def _calculate_waterline(self, weight: float, angle: float = 0.0):
         waterline = self.waterline or self.target_waterline or self.depth() / 3
- 
+
         while 0 < waterline and waterline <= self.depth():
             x = self.min_x
             step = 0.05
@@ -189,7 +193,7 @@ class Hull:
             while x <= self.max_x:
                 points = []
                 for curve in self.curves:
-                    if  angle != 0.0:
+                    if angle != 0.0:
                         leaned_curve = curve.apply_rotation_on_x_axis(self.cg, angle)
                     else:
                         leaned_curve = curve
@@ -209,72 +213,76 @@ class Hull:
                             volumes.append(volume)
                             cgs.append(cg)
                 x += step
-                
+
             # Calculate total volume
             volume = sum(volumes)
-            
+
             # Calculate weighted CG
             cgx = 0.0
             cgy = 0.0
-            cgz = 0.0   
+            cgz = 0.0
             for i in range(len(volumes)):
-                cgx += (volumes[i] * cgs[i].x)
-                cgy += (volumes[i] * cgs[i].y)
-                cgz += (volumes[i] * cgs[i].z)
-            
+                cgx += volumes[i] * cgs[i].x
+                cgy += volumes[i] * cgs[i].y
+                cgz += volumes[i] * cgs[i].z
+
             # Divide by total volume
             cgx /= volume
             cgy /= volume
             cgz /= volume
-            
-            cb = Point3D(cgx, cgy, cgz) 
-            
+
+            cb = Point3D(cgx, cgy, cgz)
+
             displacement = volume * 1000  # Assuming density of water is 1000 kg/m³
             diff = weight - displacement
             if abs(diff) > 1:  # assume a tolerance of 0.1 kg in the calculation
-                increment = diff/weight * waterline # Adjust waterline proportionally to the difference in weight
-                waterline += increment  # add the increment to the waterline to try to match the target weight 
-            else: 
+                increment = (
+                    diff / weight * waterline
+                )  # Adjust waterline proportionally to the difference in weight
+                waterline += increment  # add the increment to the waterline to try to match the target weight
+            else:
                 break
         return waterline, cb, displacement
 
     def _get_points_below_waterline(self, points: list[Point3D], waterline: float) -> list[Point3D]:
         """Get points below the waterline, including intersection points.
-        
+
         Points must first be sorted in circular order around their centroid
         before calculating waterline intersections.
         """
         if len(points) < 3:
             return []
-        
+
         # Sort points in circular order around centroid (same as Profile.sort_points)
         cy = sum(p.y for p in points) / len(points)
         cz = sum(p.z for p in points) / len(points)
         sorted_points = sorted(points, key=lambda p: np.arctan2(p.z - cz, p.y - cy))
-        
+
         below_points = []
         n = len(sorted_points)
-        
+
         for i in range(n):
             p1 = sorted_points[i]
             p2 = sorted_points[(i + 1) % n]  # Next point (wrap around)
-            
+
             if p1.z <= waterline:
                 below_points.append(p1)
-            
+
             # Check if edge crosses waterline
             if (p1.z < waterline < p2.z) or (p2.z < waterline < p1.z):
                 # Edge crosses the waterline, find intersection
                 t = (waterline - p1.z) / (p2.z - p1.z)
                 intersect_y = p1.y + t * (p2.y - p1.y)
                 below_points.append(Point3D(p1.x, intersect_y, waterline))
-        
+
         return below_points
 
+
 def read_file(file_path: str) -> dict:
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         data = json.load(file)
     return data
+
 
 # def export_profile_for_visualization(profiles: list, output_file: str):
 #     """Export profile data in format suitable for HTML visualization"""
@@ -292,24 +300,24 @@ def read_file(file_path: str) -> dict:
 #                 {"x": p.x, "y": p.y, "z": p.z} for p in profile.points
 #             ]
 #         } for profile in profiles]
-    
-#     export_data = { 
+
+#     export_data = {
 #         "profiles": export_profiles
 #         }
-    
+
 #     with open(output_file, 'w') as f:
 #         json.dump(export_data, f, indent=2)
-    
+
 #     print(f"Profile data exported to {output_file}")
 #     return export_data
 
 if __name__ == "__main__":
-    file_path = 'data/k01.json'
+    file_path = "data/k01.json"
     data = read_file(file_path)
     # pprint(data)
 
     hull = Hull()
-    hull.build(data)    
+    hull.build(data)
     print(f"Hull Name: {hull.name}")
     print(f"Hull Description: {hull.description}")
     print(f"Hull Target Waterline: {hull.target_waterline}")
@@ -317,17 +325,17 @@ if __name__ == "__main__":
     print(f"Hull Target Payload: {hull.target_payload}")
     print(f"Hull Length: {hull.length():.3f} m")
     print(f"Hull Beam: {hull.beam():.3f} m")
-    print(f"Hull Depth: {hull.depth():.3f} m")  
+    print(f"Hull Depth: {hull.depth():.3f} m")
     print(f"Hull Volume: {hull.volume:.6f} m³")
     print(f"Hull Center of Gravity: {hull.cg}")
     print(f"Hull Waterline: {hull.waterline:.3f} m")
     print(f"Hull Center of Buoyancy: {hull.cb}")
     print(f"Hull Displacement: {hull.displacement:.2f} kg")
-    
+
     # print(json.dumps(hull.as_dict(), indent=2))
-    
+
     # profile = hull.profiles
-    
+
     # # Export for visualization
     # export_profile_for_visualization(hull.profiles, 'src/research/profile_export.json')
     # print(f"Hull Volume: {hull.volume:.4f}, Center of Gravity: {hull.cg} ")

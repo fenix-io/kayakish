@@ -14,10 +14,10 @@ The application calculates:
 - Surface points on the kayak hull defined at:
   - Traverse profiles containing points on the sirface of the hull 
   - Other metadata
-- All coordinates must be referenced in orthonal coordinates where
+- All coordinates must be referenced in orthogonal coordinates where
   - x coordinates will grow from stern to bow of the boat, being the 0 exactly over the projection of the stern on the centerline.
-  - y coordinates will be positive from centerline to port, and negative from centerline to starboard. like you were looking the kayak from the bow or the tipo o x axis.
-  - Z coordinates will grow up from the deepest point of the kayak. Being the 0 the deepest point in the hull.
+  - y coordinates will be positive from centerline to starboard, and negative from centerline to port.
+  - z coordinates will grow up from the deepest point of the kayak. Being the 0 the deepest point in the hull.
 
 ## Calculation Methodology
 

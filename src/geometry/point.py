@@ -4,16 +4,17 @@ Point3D class for representing 3D coordinates and basic geometric operations.
 
 import numpy as np
 
+
 class Point3D:
     """
     Represents a point in 3D space with x, y, z coordinates.
 
     Attributes:
-        x (float): X-coordinate
-        y (float): Y-coordinate (typically transverse, perpendicular to centerline)
-        z (float): Z-coordinate (typically vertical)
-        level (str | None): Optional level identifier (e.g., 'keel', 'chine', 'gunwale')
+        x (float): X-coordinate (longitudinal, stern to bow)
+        y (float): Y-coordinate (transverse, positive = starboard)
+        z (float): Z-coordinate (vertical, positive = up)
     """
+
     __slots__ = ("x", "y", "z")
 
     def __init__(self, x: float, y: float, z: float):
@@ -24,7 +25,6 @@ class Point3D:
             x: X-coordinate
             y: Y-coordinate
             z: Z-coordinate
-            level: Optional level identifier for the point
         """
         self.x = float(x)
         self.y = float(y)

@@ -73,12 +73,10 @@ def create_stability_curve_points(
     """
     hull_weight = hull_weight or hull.target_weight
     paddler_weight = paddler_weight or hull.target_payload
-    total_weight = hull_weight  + paddler_weight
+    total_weight = hull_weight + paddler_weight
 
     # Calculate combined CG
-    combined_cg = calculate_combined_cg(
-        hull_weight, hull.cg, paddler_weight, paddler_cg_z
-    )
+    combined_cg = calculate_combined_cg(hull_weight, hull.cg, paddler_weight, paddler_cg_z)
 
     # print(f"Hull CG:     x={hull.cg.x:.3f}, y={hull.cg.y:.3f}, z={hull.cg.z:.3f} m")
     # print(f"Paddler CG:  x={hull.cg.x:.3f}, y=0.000, z={paddler_cg_z:.3f} m")
@@ -94,9 +92,7 @@ def create_stability_curve_points(
         # Calculate waterline and CB for this heel angle
         # Hull rotates around its own CG
         # Positive angle = heel to starboard (starboard side goes down)
-        waterline, cb, displacement = hull._calculate_waterline(
-            total_weight, angle=angle_deg
-        )
+        waterline, cb, displacement = hull._calculate_waterline(total_weight, angle=angle_deg)
 
         # The combined CG rotates with the hull around hull.cg
         # Calculate the position of combined CG after rotation
@@ -162,7 +158,7 @@ def create_stability_curve_points(
         if stability_points[i]["moment"] > max_moment:
             max_moment = stability_points[i]["moment"]
             max_moment_angle = stability_points[i]["angle"]
-            
+
     # if vanishing_angle:
     #     print(f"\n⚠️  Angle of vanishing stability: {vanishing_angle:.1f}°")
     # else:
@@ -192,9 +188,7 @@ def plot_stability_curve(stability_points: list[dict], hull_name: str = "Hull"):
     ax1.fill_between(
         angles, gz_values, 0, where=[g > 0 for g in gz_values], alpha=0.3, color="green"
     )
-    ax1.fill_between(
-        angles, gz_values, 0, where=[g < 0 for g in gz_values], alpha=0.3, color="red"
-    )
+    ax1.fill_between(angles, gz_values, 0, where=[g < 0 for g in gz_values], alpha=0.3, color="red")
     ax1.set_ylabel("GZ - Righting Arm (m)")
     ax1.set_title(f"Stability Curve (GZ) - {hull_name}")
     ax1.grid(True, alpha=0.3)
@@ -203,12 +197,8 @@ def plot_stability_curve(stability_points: list[dict], hull_name: str = "Hull"):
     # Moment curve
     ax2.plot(angles, moments, "g-o", linewidth=2, markersize=4)
     ax2.axhline(y=0, color="red", linestyle="--", linewidth=1)
-    ax2.fill_between(
-        angles, moments, 0, where=[m > 0 for m in moments], alpha=0.3, color="green"
-    )
-    ax2.fill_between(
-        angles, moments, 0, where=[m < 0 for m in moments], alpha=0.3, color="red"
-    )
+    ax2.fill_between(angles, moments, 0, where=[m > 0 for m in moments], alpha=0.3, color="green")
+    ax2.fill_between(angles, moments, 0, where=[m < 0 for m in moments], alpha=0.3, color="red")
     ax2.set_xlabel("Heel Angle (degrees)")
     ax2.set_ylabel("Righting Moment (N·m)")
     ax2.set_title("Righting Moment vs Heel Angle")
@@ -241,9 +231,7 @@ if __name__ == "__main__":
     print(f"Calculating stability curve with paddler CG at z={payload_cg_z}m")
     print("=" * 70)
 
-    stability_curve = create_stability_curve(
-        hull, paddler_cg_z=payload_cg_z, max_angle=90, step=5
-    )
+    stability_curve = create_stability_curve(hull, paddler_cg_z=payload_cg_z, max_angle=90, step=5)
 
     print("\n" + "=" * 70)
     plot_stability_curve(stability_curve, hull.name)
