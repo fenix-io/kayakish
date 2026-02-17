@@ -4,6 +4,7 @@ let hullDetails = null;
 let currentView = 'iso';
 let currentTab = 'visualization';
 let stabilityData = null;
+let resistanceData = null;
 let notificationTimeout = null;
 
 // Notification functions
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('createHullForm').addEventListener('submit', handleCreateHull);
     document.getElementById('editHullForm').addEventListener('submit', handleEditHull);
     document.getElementById('stabilityForm').addEventListener('submit', handleStabilityAnalysis);
+    document.getElementById('resistanceForm').addEventListener('submit', handleResistanceAnalysis);
 });
 
 // Load list of kayaks
@@ -180,6 +182,9 @@ async function loadHullDetailsForVisualization() {
         
         // Populate stability form with hull values
         populateStabilityForm(hullDetails);
+        
+        // Populate resistance form
+        populateResistanceForm(hullDetails);
         
     } catch (error) {
         console.error('Error loading hull details:', error);
@@ -1002,6 +1007,9 @@ function switchTab(tabName) {
     } else if (tabName === 'stability' && stabilityData) {
         setupStabilityCanvas();
         drawStabilityResults(stabilityData);
+    } else if (tabName === 'resistance' && resistanceData) {
+        setupResistanceCanvas();
+        drawResistanceResults(resistanceData);
     } else if (tabName === 'profiles' && currentProfile) {
         // Redraw profiles when tab becomes visible
         drawProfile();
@@ -1489,6 +1497,534 @@ function addBackButton() {
     
     resultsDiv.style.position = 'relative';
     resultsDiv.appendChild(button);
+}
+
+// ========== RESISTANCE TAB ==========
+
+// Populate resistance form (no hull-specific values needed, but could add presets)
+function populateResistanceForm(hull) {
+    // Form already has default values, but we could add logic here
+    // For example, adjust max speed based on hull length
+    // For now, keeping defaults
+}
+
+// Setup resistance canvas
+function setupResistanceCanvas() {
+    const resistanceCanvas = document.getElementById('resistanceCanvas');
+    const powerCanvas = document.getElementById('powerCanvas');
+    if (!resistanceCanvas || !powerCanvas) return;
+    
+    const container = resistanceCanvas.closest('.resistance-graphs');
+    
+    // Resize canvases to fit container
+    function resizeCanvas() {
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        
+        // Each canvas gets half the width minus gap
+        const canvasWidth = (rect.width - 15) / 2 - 20; // 15px gap, some padding
+        const canvasHeight = Math.max(400, rect.height - 80); // Account for title
+        
+        resistanceCanvas.width = canvasWidth;
+        resistanceCanvas.height = canvasHeight;
+        powerCanvas.width = canvasWidth;
+        powerCanvas.height = canvasHeight;
+        
+        if (resistanceData) {
+            drawResistanceResults(resistanceData);
+        }
+    }
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+}
+
+// Handle resistance analysis form submission
+async function handleResistanceAnalysis(e) {
+    e.preventDefault();
+    
+    if (!selectedKayak) {
+        alert('Please select a kayak first');
+        return;
+    }
+    
+    try {
+        // Get form values
+        const minSpeed = parseFloat(document.getElementById('minSpeed').value);
+        const maxSpeed = parseFloat(document.getElementById('maxSpeed').value);
+        const speedStep = parseFloat(document.getElementById('speedStep').value);
+        const waterType = document.getElementById('waterType').value;
+        const roughnessAllowance = parseFloat(document.getElementById('roughnessAllowance').value);
+        const propulsionEfficiency = parseFloat(document.getElementById('propulsionEfficiency').value);
+        
+        // Validate inputs
+        if (minSpeed < 0) {
+            alert('Minimum speed must be non-negative');
+            return;
+        }
+        if (maxSpeed <= minSpeed) {
+            alert('Maximum speed must be greater than minimum speed');
+            return;
+        }
+        if (speedStep <= 0) {
+            alert('Speed step must be positive');
+            return;
+        }
+        
+        // Build request body
+        const requestBody = {
+            hull_name: selectedKayak.name,
+            min_speed: minSpeed,
+            max_speed: maxSpeed,
+            speed_step: speedStep,
+            water_type: waterType,
+            roughness_allowance: roughnessAllowance,
+            propulsion_efficiency: propulsionEfficiency
+        };
+        
+        // Hide form and results, show loader
+        document.querySelector('.resistance-form-container').style.display = 'none';
+        document.getElementById('resistanceResults').classList.remove('show');
+        document.getElementById('resistanceLoader').classList.add('show');
+        
+        // Make POST request
+        const response = await fetch(`${API_BASE}/hulls/${selectedKayak.name}/resistance`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to analyze resistance');
+        }
+        
+        resistanceData = await response.json();
+        
+        // Hide loader, show results
+        document.getElementById('resistanceLoader').classList.remove('show');
+        document.getElementById('resistanceResults').classList.add('show');
+        
+        // Populate summary parameters
+        populateResistanceParameters(resistanceData);
+        
+        // Draw results
+        setupResistanceCanvas();
+        drawResistanceResults(resistanceData);
+        
+    } catch (error) {
+        console.error('Error analyzing resistance:', error);
+        alert(`Error analyzing resistance: ${error.message}`);
+        
+        // Hide loader, show form
+        document.getElementById('resistanceLoader').classList.remove('show');
+        document.querySelector('.resistance-form-container').style.display = 'block';
+    }
+}
+
+// Populate resistance parameters summary
+function populateResistanceParameters(data) {
+    document.getElementById('paramWaterlineLength').textContent = 
+        data.waterline_length ? `${data.waterline_length.toFixed(3)} m` : 'N/A';
+    document.getElementById('paramWaterlineBeam').textContent = 
+        data.waterline_beam ? `${data.waterline_beam.toFixed(3)} m` : 'N/A';
+    document.getElementById('paramWettedSurface').textContent = 
+        data.wetted_surface ? `${data.wetted_surface.toFixed(3)} m²` : 'N/A';
+    document.getElementById('paramHullSpeed').textContent = 
+        data.hull_speed_kmh ? `${data.hull_speed_kmh.toFixed(2)} km/h (${data.hull_speed_knots.toFixed(2)} kn)` : 'N/A';
+    document.getElementById('paramBlockCoeff').textContent = 
+        data.block_coefficient ? data.block_coefficient.toFixed(3) : 'N/A';
+    document.getElementById('paramPrismaticCoeff').textContent = 
+        data.prismatic_coefficient ? data.prismatic_coefficient.toFixed(3) : 'N/A';
+}
+
+// Draw resistance results on canvas
+function drawResistanceResults(data) {
+    const resistanceCanvas = document.getElementById('resistanceCanvas');
+    const powerCanvas = document.getElementById('powerCanvas');
+    if (!resistanceCanvas || !powerCanvas) return;
+    
+    if (!data.resistance_points || data.resistance_points.length === 0) {
+        const ctx = resistanceCanvas.getContext('2d');
+        ctx.fillStyle = '#666';
+        ctx.font = '14px Arial';
+        ctx.fillText('No resistance data to display', resistanceCanvas.width / 2 - 100, resistanceCanvas.height / 2);
+        return;
+    }
+    
+    const points = data.resistance_points;
+    
+    // Draw resistance graph
+    drawResistanceGraph(resistanceCanvas, points, data);
+    
+    // Draw power graph
+    drawPowerGraph(powerCanvas, points, data);
+    
+    // Add button to go back to form
+    addResistanceBackButton();
+}
+
+// Draw resistance vs speed graph
+function drawResistanceGraph(canvas, points, data) {
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Calculate bounds (convert to km/h for display)
+    const maxSpeed = Math.max(...points.map(p => p.speed_kmh));
+    const maxResistance = Math.max(...points.map(p => p.total_resistance));
+    
+    // Drawing parameters
+    const padding = 60;
+    const graphWidth = canvas.width - 2 * padding;
+    const graphHeight = canvas.height - 2 * padding - 40; // Space for legend
+    
+    // Scale factors
+    const scaleX = graphWidth / maxSpeed;
+    const scaleY = graphHeight / maxResistance;
+    const zeroY = padding + graphHeight;
+    
+    // Draw axes
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, zeroY);
+    ctx.lineTo(padding + graphWidth, zeroY);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, zeroY);
+    ctx.stroke();
+    
+    // Draw grid
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 1;
+    
+    // Vertical grid lines (speed in km/h)
+    const speedStep = maxSpeed > 20 ? 5 : 2;
+    for (let speed = 0; speed <= maxSpeed; speed += speedStep) {
+        const x = padding + speed * scaleX;
+        ctx.beginPath();
+        ctx.moveTo(x, padding);
+        ctx.lineTo(x, zeroY);
+        ctx.stroke();
+        
+        // Label
+        ctx.fillStyle = '#333';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(speed.toFixed(0), x, zeroY + 15);
+    }
+    
+    // Horizontal grid lines (resistance in N)
+    const resistanceStep = maxResistance / 8;
+    for (let i = 0; i <= 8; i++) {
+        const resistance = i * resistanceStep;
+        const y = zeroY - resistance * scaleY;
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(padding + graphWidth, y);
+        ctx.stroke();
+        
+        // Label
+        ctx.fillStyle = '#333';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(resistance.toFixed(1), padding - 5, y + 4);
+    }
+    
+    // Axis labels
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Speed (km/h)', canvas.width / 2, canvas.height - 5);
+    
+    ctx.save();
+    ctx.translate(15, canvas.height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Resistance (N)', 0, 0);
+    ctx.restore();
+    
+    // Draw total resistance curve
+    ctx.strokeStyle = '#007bff';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    points.forEach((point, idx) => {
+        const x = padding + point.speed_kmh * scaleX;
+        const y = zeroY - point.total_resistance * scaleY;
+        if (idx === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+    
+    // Draw frictional resistance curve
+    ctx.strokeStyle = '#28a745';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    points.forEach((point, idx) => {
+        const x = padding + point.speed_kmh * scaleX;
+        const y = zeroY - point.frictional_resistance * scaleY;
+        if (idx === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+    
+    // Draw residuary resistance curve
+    ctx.strokeStyle = '#ffc107';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    points.forEach((point, idx) => {
+        const x = padding + point.speed_kmh * scaleX;
+        const y = zeroY - point.residuary_resistance * scaleY;
+        if (idx === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Draw hull speed line (if available)
+    if (data.hull_speed_kmh) {
+        const hullSpeedX = padding + data.hull_speed_kmh * scaleX;
+        ctx.strokeStyle = '#dc3545';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(hullSpeedX, padding);
+        ctx.lineTo(hullSpeedX, zeroY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Label
+        ctx.fillStyle = '#dc3545';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('Hull Speed', hullSpeedX + 3, padding + 15);
+    }
+    
+    // Legend
+    const legendY = canvas.height - 25;
+    const legendItems = [
+        { color: '#007bff', label: 'Total', dash: [] },
+        { color: '#28a745', label: 'Frictional', dash: [5, 3] },
+        { color: '#ffc107', label: 'Residuary', dash: [2, 2] }
+    ];
+    
+    let legendX = padding;
+    legendItems.forEach(item => {
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash(item.dash);
+        ctx.beginPath();
+        ctx.moveTo(legendX, legendY);
+        ctx.lineTo(legendX + 30, legendY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.fillStyle = '#333';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(item.label, legendX + 35, legendY + 4);
+        
+        legendX += 100;
+    });
+}
+
+// Draw power vs speed graph
+function drawPowerGraph(canvas, points, data) {
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Calculate bounds (convert to km/h for display)
+    const maxSpeed = Math.max(...points.map(p => p.speed_kmh));
+    const maxPower = Math.max(...points.map(p => p.paddler_power));
+    
+    // Drawing parameters
+    const padding = 60;
+    const graphWidth = canvas.width - 2 * padding;
+    const graphHeight = canvas.height - 2 * padding - 40; // Space for legend
+    
+    // Scale factors
+    const scaleX = graphWidth / maxSpeed;
+    const scaleY = graphHeight / maxPower;
+    const zeroY = padding + graphHeight;
+    
+    // Draw axes
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, zeroY);
+    ctx.lineTo(padding + graphWidth, zeroY);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, zeroY);
+    ctx.stroke();
+    
+    // Draw grid
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 1;
+    
+    // Vertical grid lines (speed in km/h)
+    const speedStep = maxSpeed > 20 ? 5 : 2;
+    for (let speed = 0; speed <= maxSpeed; speed += speedStep) {
+        const x = padding + speed * scaleX;
+        ctx.beginPath();
+        ctx.moveTo(x, padding);
+        ctx.lineTo(x, zeroY);
+        ctx.stroke();
+        
+        // Label
+        ctx.fillStyle = '#333';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(speed.toFixed(0), x, zeroY + 15);
+    }
+    
+    // Horizontal grid lines (power in W)
+    const powerStep = maxPower / 8;
+    for (let i = 0; i <= 8; i++) {
+        const power = i * powerStep;
+        const y = zeroY - power * scaleY;
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(padding + graphWidth, y);
+        ctx.stroke();
+        
+        // Label
+        ctx.fillStyle = '#333';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(power.toFixed(0), padding - 5, y + 4);
+    }
+    
+    // Axis labels
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Speed (km/h)', canvas.width / 2, canvas.height - 5);
+    
+    ctx.save();
+    ctx.translate(15, canvas.height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Power (W)', 0, 0);
+    ctx.restore();
+    
+    // Draw paddler power curve
+    ctx.strokeStyle = '#6f42c1';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    points.forEach((point, idx) => {
+        const x = padding + point.speed_kmh * scaleX;
+        const y = zeroY - point.paddler_power * scaleY;
+        if (idx === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+    
+    // Draw effective power curve
+    ctx.strokeStyle = '#17a2b8';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    points.forEach((point, idx) => {
+        const x = padding + point.speed_kmh * scaleX;
+        const y = zeroY - point.effective_power * scaleY;
+        if (idx === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Draw hull speed line (if available)
+    if (data.hull_speed_kmh) {
+        const hullSpeedX = padding + data.hull_speed_kmh * scaleX;
+        ctx.strokeStyle = '#dc3545';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(hullSpeedX, padding);
+        ctx.lineTo(hullSpeedX, zeroY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Label
+        ctx.fillStyle = '#dc3545';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('Hull Speed', hullSpeedX + 3, padding + 15);
+    }
+    
+    // Legend
+    const legendY = canvas.height - 25;
+    const legendItems = [
+        { color: '#6f42c1', label: 'Paddler Power', dash: [] },
+        { color: '#17a2b8', label: 'Effective Power', dash: [5, 3] }
+    ];
+    
+    let legendX = padding;
+    legendItems.forEach(item => {
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash(item.dash);
+        ctx.beginPath();
+        ctx.moveTo(legendX, legendY);
+        ctx.lineTo(legendX + 30, legendY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.fillStyle = '#333';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(item.label, legendX + 35, legendY + 4);
+        
+        legendX += 140;
+    });
+}
+
+// Add back button for resistance analysis
+function addResistanceBackButton() {
+    // Check if button already exists
+    if (document.getElementById('resistanceBackBtn')) return;
+    
+    const resultsDiv = document.getElementById('resistanceResults');
+    const button = document.createElement('button');
+    button.id = 'resistanceBackBtn';
+    button.textContent = '← Back to Form';
+    button.className = 'btn-secondary';
+    button.style.marginTop = '10px';
+    button.onclick = () => {
+        document.getElementById('resistanceResults').classList.remove('show');
+        document.querySelector('.resistance-form-container').style.display = 'block';
+    };
+    resultsDiv.insertBefore(button, resultsDiv.firstChild);
 }
 
 // ========== PROFILES TAB ==========

@@ -159,13 +159,13 @@ The glossary footer says:
 - [x] **R5. Residuary (Wave-Making) Resistance** — Implemented empirical $C_r$ vs Froude number model for slender displacement hulls in `src/analysis/resistance.py`. Model accounts for speed regimes from low wave resistance (Fn < 0.3) to high wave resistance (Fn > 0.4).
 - [x] **R6. Total Resistance & Power Curves** — Combined frictional + residuary resistance; computed effective power ($P = R \times V$), paddler power (with efficiency factor), and hull speed estimate. Added `ResistanceResult` dataclass and functions for resistance curves across speed ranges.
 
-## Phase 3: API & Visualization
+## Phase 3: API & Visualization ✅ COMPLETED
 
-- [ ] **R7. API Endpoint** — Add a `/hull/{name}/resistance` route that returns resistance, power, and performance data for a speed range.
-- [ ] **R8. Visualization** — Add resistance/power curve charts to the HTML visualization (similar to stability curve display).
+- [x] **R7. API Endpoint** — Add a `/hull/{name}/resistance` route that returns resistance, power, and performance data for a speed range.
+- [x] **R8. Visualization** — Add resistance/power curve charts to the HTML visualization (similar to stability curve display).
 
 ## Phase 4: Testing & Documentation
 
 - [x] **R9. Unit Tests (Phase 1)** — Wrote comprehensive tests for wetted surface area, waterline length/beam, and hull form coefficients. Tests include Profile.wetted_perimeter() (7 tests), Hull wetted surface/waterline methods (12 tests), and hull_parameters functions (24 tests). Total: 43 Phase 1 tests passing.
 - [x] **R9. Unit Tests (Phase 2)** — Wrote comprehensive tests for resistance calculations including Reynolds/Froude numbers (12 tests), ITTC friction coefficient (5 tests), frictional resistance (5 tests), residuary resistance (7 tests), power calculations (9 tests), complete resistance calculation (5 tests), resistance curves (2 tests), energy calculations (5 tests), and integration tests (3 tests). Total: 61 Phase 2 tests passing.
-- [ ] **R10. Documentation** — Update `docs/Architecture.md` and `docs/User_Guide.md` with the new resistance analysis feature.
+- [x] **R10. Documentation** — Updated `docs/Architecture.md` with resistance analysis architecture (new modules, calculation methods, API endpoint). Updated `docs/User_Guide.md` with complete user documentation for running resistance analysis via Web UI and API, including parameter reference, result interpretation, and best practices.

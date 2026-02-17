@@ -743,6 +743,102 @@ h3 {
     min-height: 400px;
 }
 
+/* Resistance Tab */
+.resistance-form-container {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+
+.resistance-form {
+    max-width: 800px;
+}
+
+.resistance-loader {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.resistance-loader.show {
+    display: flex;
+}
+
+.resistance-loader img {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 15px;
+}
+
+.resistance-loader p {
+    color: #666;
+    font-size: 14px;
+}
+
+.resistance-results {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: auto;
+}
+
+.resistance-results.show {
+    display: flex;
+}
+
+.resistance-summary {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+
+.resistance-summary h3 {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.resistance-params {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.param-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.param-label {
+    font-size: 11px;
+    color: #666;
+    font-weight: 500;
+}
+
+.param-value {
+    font-size: 13px;
+    color: #333;
+    font-weight: 600;
+}
+
+.resistance-graphs {
+    display: flex;
+    gap: 15px;
+    flex: 1;
+    min-height: 0;
+}
+
 /* Profiles Tab */
 .empty-state {
     display: flex;

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <link rel="icon" href="logo.svg" type="image/svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kayak Hull Viewer</title>
+    <title>Kayakish - Kayak Hull Analyzer</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -53,6 +53,7 @@
             <div class="tabs">
                 <button class="tab-button active" onclick="switchTab('visualization')">Visualization</button>
                 <button class="tab-button" onclick="switchTab('stability')">Stability</button>
+                <button class="tab-button" onclick="switchTab('resistance')">Resistance</button>
                 <button class="tab-button" onclick="switchTab('profiles')">Profiles</button>
             </div>
             
@@ -159,6 +160,115 @@
                         <div class="graph-container">
                             <h3>Righting Moment vs Heel Angle</h3>
                             <canvas id="momentCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Content: Resistance -->
+            <div id="resistance-tab" class="tab-content">
+                <div class="resistance-form-container">
+                    <form id="resistanceForm" class="resistance-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="minSpeed">Min Speed (m/s)</label>
+                                <input type="number" id="minSpeed" step="0.1" value="0.5" min="0">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="maxSpeed">Max Speed (m/s)</label>
+                                <input type="number" id="maxSpeed" step="0.1" value="4.0" min="0.1">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="speedStep">Speed Step (m/s)</label>
+                                <input type="number" id="speedStep" step="0.05" value="0.25" min="0.01">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="waterType">Water Type</label>
+                                <select id="waterType">
+                                    <option value="fresh">Fresh Water</option>
+                                    <option value="salt">Salt Water</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="roughnessAllowance">Surface Roughness</label>
+                                <select id="roughnessAllowance">
+                                    <option value="0.0002">Smooth (gelcoat, polished)</option>
+                                    <option value="0.0004" selected>Standard (thermoformed plastic)</option>
+                                    <option value="0.0006">Rough (weathered, composite)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="propulsionEfficiency">Paddle Efficiency</label>
+                                <select id="propulsionEfficiency">
+                                    <option value="0.50">Low (0.50 - beginner)</option>
+                                    <option value="0.60" selected>Medium (0.60 - average)</option>
+                                    <option value="0.70">High (0.70 - expert)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <button type="submit" class="btn-primary" style="width: 100%;">
+                                    Analyze Resistance
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div id="resistanceLoader" class="resistance-loader">
+                    <img src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." />
+                    <p>Analyzing resistance...</p>
+                </div>
+                
+                <div id="resistanceResults" class="resistance-results">
+                    <div class="resistance-summary">
+                        <h3>Hull Parameters</h3>
+                        <div class="resistance-params">
+                            <div class="param-item">
+                                <span class="param-label">Waterline Length:</span>
+                                <span id="paramWaterlineLength" class="param-value">-</span>
+                            </div>
+                            <div class="param-item">
+                                <span class="param-label">Waterline Beam:</span>
+                                <span id="paramWaterlineBeam" class="param-value">-</span>
+                            </div>
+                            <div class="param-item">
+                                <span class="param-label">Wetted Surface:</span>
+                                <span id="paramWettedSurface" class="param-value">-</span>
+                            </div>
+                            <div class="param-item">
+                                <span class="param-label">Hull Speed:</span>
+                                <span id="paramHullSpeed" class="param-value">-</span>
+                            </div>
+                            <div class="param-item">
+                                <span class="param-label">Block Coefficient (Cb):</span>
+                                <span id="paramBlockCoeff" class="param-value">-</span>
+                            </div>
+                            <div class="param-item">
+                                <span class="param-label">Prismatic Coefficient (Cp):</span>
+                                <span id="paramPrismaticCoeff" class="param-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="resistance-graphs">
+                        <div class="graph-container">
+                            <h3>Total Resistance vs Speed</h3>
+                            <canvas id="resistanceCanvas"></canvas>
+                        </div>
+                        <div class="graph-container">
+                            <h3>Power Requirements vs Speed</h3>
+                            <canvas id="powerCanvas"></canvas>
                         </div>
                     </div>
                 </div>

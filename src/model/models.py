@@ -199,3 +199,52 @@ class StabilityAnalysisModel(BaseModel):
     max_angle: float = 90
     step: float = 3
     break_on_vanishing: bool = False
+
+
+class ResistancePointModel(BaseModel):
+    """Single data point in resistance analysis."""
+
+    speed: float
+    speed_kmh: float | None = None
+    speed_knots: float | None = None
+    froude_number: float
+    reynolds_number: float
+    friction_coefficient: float
+    residuary_coefficient: float
+    frictional_resistance: float
+    residuary_resistance: float
+    total_resistance: float
+    effective_power: float
+    paddler_power: float
+
+
+class ResistanceAnalysisModel(BaseModel):
+    """Request model for resistance analysis."""
+
+    hull_name: str
+    min_speed: float = Field(default=0.5, description="Minimum speed in m/s")
+    max_speed: float = Field(default=4.0, description="Maximum speed in m/s")
+    speed_step: float = Field(default=0.25, description="Speed step in m/s")
+    water_type: str = Field(default="fresh", description="Water type: 'fresh' or 'salt'")
+    roughness_allowance: float = Field(
+        default=0.0004, description="Hull surface roughness coefficient"
+    )
+    propulsion_efficiency: float = Field(
+        default=0.60, description="Paddle propulsion efficiency (0-1)"
+    )
+
+
+class ResistanceAnalysisResultModel(BaseModel):
+    """Result model for resistance analysis."""
+
+    hull_speed_ms: float | None = None
+    hull_speed_kmh: float | None = None
+    hull_speed_knots: float | None = None
+    waterline_length: float | None = None
+    waterline_beam: float | None = None
+    wetted_surface: float | None = None
+    block_coefficient: float | None = None
+    prismatic_coefficient: float | None = None
+    midship_coefficient: float | None = None
+    waterplane_coefficient: float | None = None
+    resistance_points: List[ResistancePointModel] = Field(default_factory=list)

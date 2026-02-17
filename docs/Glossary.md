@@ -82,7 +82,7 @@ A dimensionless ratio describing the fullness of the hull relative to its boundi
 
 **Context:** Resistance Analysis, Hull Form
 **Related Terms:** Prismatic Coefficient, Midship Coefficient, Displacement, Waterline Length
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_block_coefficient()` in `src/analysis/hull_parameters.py`. Used as an output metric in the `/hulls/{name}/resistance` API endpoint.
 
 ---
 
@@ -224,7 +224,7 @@ The power required to overcome the total hull resistance at a given speed. This 
 
 **Context:** Resistance Analysis, Performance
 **Related Terms:** Power, Paddler Power, Total Resistance, Paddle Efficiency
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_effective_power()` in `src/analysis/resistance.py`.
 
 ### Equilibrium
 The state where the kayak floats with buoyant force exactly balancing the weight, and all moments are balanced (no net rotation).
@@ -271,7 +271,7 @@ The drag force caused by the viscous interaction between the hull surface and th
 
 **Context:** Resistance Analysis, Hydrodynamics
 **Related Terms:** ITTC 1957, Reynolds Number, Wetted Surface, Residuary Resistance, Total Resistance
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_frictional_resistance()` in `src/analysis/resistance.py`. Uses ITTC 1957 correlation line.
 
 ### Froude Number ($F_n$)
 A dimensionless number describing the ratio of boat speed to the natural wave propagation speed for the hull. It is the primary parameter governing wave-making resistance.
@@ -299,7 +299,7 @@ A dimensionless number describing the ratio of boat speed to the natural wave pr
 
 **Context:** Resistance Analysis, Hydrodynamics
 **Related Terms:** Hull Speed, Residuary Resistance, Waterline Length, Prismatic Coefficient
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_froude_number()` in `src/analysis/resistance.py`. Used as a primary input to residuary resistance estimation.
 
 ### Freeboard
 The vertical distance from the waterline to the deck or gunwale. Represents the reserve buoyancy above water.
@@ -444,7 +444,7 @@ The internationally agreed-upon formula for computing the frictional resistance 
 
 **Context:** Resistance Analysis, Hydrodynamics
 **Related Terms:** Frictional Resistance, Reynolds Number, Wetted Surface
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_ittc_friction_coefficient()` in `src/analysis/resistance.py`. Used to determine frictional resistance coefficient.
 
 ---
 
@@ -580,7 +580,7 @@ A dimensionless ratio describing the fullness of the largest submerged cross-sec
 
 **Context:** Resistance Analysis, Hull Form
 **Related Terms:** Block Coefficient, Prismatic Coefficient, Cross-Section, Profile
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_midship_coefficient()` in `src/analysis/hull_parameters.py`. Used as an output metric in the `/hulls/{name}/resistance` API endpoint.
 
 ### Moment
 The rotational effect of a force, equal to force times perpendicular distance. In stability analysis, the righting moment opposes heeling.
@@ -667,7 +667,7 @@ The total mechanical power a paddler must produce at the paddle shaft to maintai
 
 **Context:** Resistance Analysis, Performance
 **Related Terms:** Effective Power, Paddle Efficiency, Total Resistance
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_paddler_power()` in `src/analysis/resistance.py`. Converts effective power to paddler power accounting for paddle efficiency.
 
 ### PCHIP (Piecewise Cubic Hermite Interpolating Polynomial)
 A shape-preserving interpolation method that avoids overshoots between data points. Used as the primary interpolation method for hull curves when x-coordinates are monotonically increasing. Unlike standard cubic splines, PCHIP preserves monotonicity of the data.
@@ -720,7 +720,7 @@ Or equivalently: $C_p = \frac{C_b}{C_m}$
 
 **Context:** Resistance Analysis, Hull Form
 **Related Terms:** Block Coefficient, Midship Coefficient, Froude Number, Residuary Resistance
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_prismatic_coefficient()` in `src/analysis/hull_parameters.py`. Primary input to residuary resistance estimation.
 
 ### Profile
 A cross-sectional shape of the hull at a particular longitudinal station. In Kayakish, profiles are **auto-generated** by evaluating all spline curves at a given x-coordinate during the build process. Users define curves (not profiles directly), and the system creates profiles at regular 0.05 m intervals.
@@ -777,7 +777,7 @@ Approach options:
 
 **Context:** Resistance Analysis, Hydrodynamics
 **Related Terms:** Frictional Resistance, Total Resistance, Froude Number, Prismatic Coefficient, Wave-Making Resistance
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_residuary_coefficient()` and `calculate_residuary_resistance()` in `src/analysis/resistance.py`. Uses empirical data tables based on Froude number and prismatic coefficient.
 
 ### Reserve Buoyancy
 The volume of the hull above the waterline that can provide additional buoyancy if the kayak is pushed lower in the water.
@@ -810,7 +810,7 @@ For kayaks, $Re$ is always in the **turbulent** regime (typically 2–10 million
 
 **Context:** Resistance Analysis, Hydrodynamics
 **Related Terms:** ITTC 1957, Frictional Resistance, Kinematic Viscosity, Waterline Length
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_reynolds_number()` in `src/analysis/resistance.py`. Sole input to ITTC 1957 friction coefficient calculation.
 
 ### Righting Arm
 See **GZ**
@@ -1187,7 +1187,7 @@ A dimensionless ratio describing the fullness of the waterplane area (the hull's
 
 **Context:** Resistance Analysis, Hull Form
 **Related Terms:** Block Coefficient, Prismatic Coefficient, Waterplane
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `calculate_waterplane_coefficient()` in `src/analysis/hull_parameters.py`. Used as an output metric in the `/hulls/{name}/resistance` API endpoint.
 
 ### Wetted Surface ($S_w$)
 The total area of the hull surface in contact with water below the waterline. The primary geometric input for frictional resistance calculation.
@@ -1200,7 +1200,7 @@ $$S_w = \int_0^{L} P_w(x) \, dx \approx \sum_{i} \frac{P_w(x_i) + P_w(x_{i+1})}{
 **Units:** square meters (m²)  
 **Context:** Hydrodynamics, Resistance Analysis  
 **Related Terms:** Frictional Resistance, Wetted Perimeter, Hull, ITTC 1957
-**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+**Implementation:** Computed by `hull.wetted_surface_area()` in `src/geometry/hull.py`, integrating wetted perimeter along the hull length.
 
 ### Width
 See **Beam**

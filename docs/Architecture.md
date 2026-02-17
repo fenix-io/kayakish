@@ -45,7 +45,9 @@ The core idea is simple: the user provides a set of 3D curves that describe the 
 │  │   └── weight.py        Weight: simple weight+CG container    │
 │  │                                                               │
 │  ├── src/analysis/                                               │
-│  │   └── stability.py     Stability curve (GZ) computation      │
+│  │   ├── stability.py          Stability curve (GZ) computation │
+│  │   ├── resistance.py         Resistance & performance analysis│
+│  │   └── hull_parameters.py    Form coefficients & dimensions   │
 │  │                                                               │
 │  └── src/utils/                                                  │
 │      └── filename.py      Filename sanitization                  │
@@ -95,6 +97,7 @@ Implements a RESTful CRUD interface plus a stability analysis endpoint:
 | `PUT` | `/hulls/{name}` | Update an existing hull |
 | `DELETE` | `/hulls/{name}` | Delete a hull |
 | `POST` | `/hulls/{name}/stability` | Run stability analysis |
+| `POST` | `/hulls/{name}/resistance` | Run resistance & performance analysis |
 
 **Create/Update flow:**
 1. Receive a `CreateHullModel` (name, metadata, curves).
@@ -201,15 +204,85 @@ The central orchestrator. Two initialization paths:
 3. Determines the **vanishing angle** by linear interpolation where GZ crosses zero.
 4. Reports maximum righting moment and its angle.
 
-### 3.7 Frontend — `visualization/`
+### 3.7 Resistance & Performance Analysis — `src/analysis/resistance.py` & `hull_parameters.py`
+
+The resistance analysis module estimates the force, power, and energy required to move the kayak at various speeds, based on the hull geometry.
+
+#### 3.7.1 Hull Form Parameters (`hull_parameters.py`)
+
+Calculates geometric properties and dimensionless form coefficients:
+
+**Geometric parameters:**
+- **Waterline length ($L_{WL}$)**: Distance from most forward to most aft point where the hull intersects the waterline
+- **Waterline beam ($B_{WL}$)**: Maximum width of the hull at the waterline
+- **Draft ($T$)**: Vertical distance from waterline to keel (deepest point)
+- **Wetted surface area ($S_w$)**: Total hull surface area in contact with water below the waterline
+- **Waterplane area ($A_{wp}$)**: Area of the hull's footprint on the water surface
+
+**Form coefficients** (dimensionless ratios characterizing hull shape):
+- **Block coefficient ($C_b$)**: $\frac{\nabla}{L_{WL} \times B_{WL} \times T}$ — fullness relative to bounding box
+- **Prismatic coefficient ($C_p$)**: $\frac{\nabla}{A_{max} \times L_{WL}}$ — volume distribution along length
+- **Midship coefficient ($C_m$)**: $\frac{A_{max}}{B_{WL} \times T}$ — fullness of largest cross-section
+- **Waterplane coefficient ($C_{wp}$)**: $\frac{A_{wp}}{L_{WL} \times B_{WL}}$ — fullness of waterplane
+
+Where $\nabla$ is displaced volume (m³) and $A_{max}$ is the maximum submerged cross-section area (m²).
+
+**Wetted surface calculation:**
+1. For each station along the hull, compute the **wetted perimeter** (arc length of the submerged profile boundary)
+2. Integrate wetted perimeter along hull length using trapezoidal rule:
+   $$S_w = \int_0^{L} P_w(x) \, dx \approx \sum_{i} \frac{P_w(x_i) + P_w(x_{i+1})}{2} \Delta x$$
+
+#### 3.7.2 Resistance Calculation (`resistance.py`)
+
+Total resistance is decomposed into two components: $R_{total} = R_f + R_r$
+
+**Frictional Resistance ($R_f$)** — viscous drag on wetted surface:
+$$R_f = \frac{1}{2} \rho V^2 S_w C_f$$
+
+- Uses **ITTC 1957 friction line**: $C_f = \frac{0.075}{(\log_{10} Re - 2)^2} + \Delta C_f$
+- Reynolds number: $Re = \frac{V \times L_{WL}}{\nu}$ (where $\nu$ is kinematic viscosity)
+- Includes roughness allowance $\Delta C_f$ for hull surface finish (default: 0.0004)
+- Typically accounts for 70–90% of total resistance at kayak speeds
+
+**Residuary Resistance ($R_r$)** — wave-making and pressure drag:
+$$R_r = \frac{1}{2} \rho V^2 S_w C_r$$
+
+- Uses empirical $C_r$ model based on Froude number: $F_n = \frac{V}{\sqrt{g \times L_{WL}}}$
+- Speed regimes:
+  - $F_n < 0.30$: Negligible wave resistance ($C_r \approx 0$)
+  - $F_n = 0.30-0.40$: Moderate wave resistance (gradual increase)
+  - $F_n > 0.40$: High wave resistance (exponential growth near hull speed)
+- Accounts for hull fullness via prismatic coefficient adjustment
+
+**Performance Metrics:**
+- **Effective power**: $P_e = R_{total} \times V$
+- **Paddler power**: $P_{paddler} = \frac{P_e}{\eta}$ (with propulsion efficiency $\eta \approx 0.60$)
+- **Hull speed**: $V_{hull} \approx 1.34 \sqrt{L_{WL}}$ knots (theoretical displacement speed limit)
+- **Energy for distance $d$**: $E = \frac{R_{total} \times d}{\eta}$
+
+#### 3.7.3 API Endpoint
+
+**`POST /hulls/{name}/resistance`** accepts:
+- Speed range parameters (min, max, step in m/s or km/h)
+- Water type (fresh/salt — affects density)
+- Propulsion efficiency (default: 0.60)
+- Roughness allowance (default: 0.0004)
+
+Returns:
+- Hull form coefficients and geometric parameters
+- Resistance curve data points (speed, Froude number, resistance components, power)
+- Hull speed estimate in m/s, km/h, and knots
+
+### 3.8 Frontend — `visualization/`
 
 A single-page application using vanilla HTML, CSS, and JavaScript (no framework dependencies).
 
 **Layout:**
 - **Left sidebar:** Kayak list (with New/Edit/Delete) + Summary panel (toggleable to show detailed curves/profiles).
-- **Main area:** Tabbed interface with three views:
+- **Main area:** Tabbed interface with four views:
   - **Visualization** — canvas rendering of hull curves in multiple projections (isometric, side, top, front, 3D perspective), with waterline indication and color coding.
   - **Stability** — form to configure stability parameters, triggers API call, renders GZ and righting moment graphs on two canvases.
+  - **Resistance** — form to configure speed range and water conditions, triggers API call, renders resistance and power curves.
   - **Profiles** — station selector with navigation buttons, renders the cross-section profile at the selected x-station plus a hull side-view showing the station position.
 
 **Data flow:**
@@ -217,6 +290,7 @@ A single-page application using vanilla HTML, CSS, and JavaScript (no framework 
 2. Selecting a kayak fetches `GET /hulls/{name}` for full details.
 3. Create/Edit opens a modal, submits `POST /hulls/` or `PUT /hulls/{name}`.
 4. Stability analysis submits `POST /hulls/{name}/stability` and draws results.
+5. Resistance analysis submits `POST /hulls/{name}/resistance` and draws results.
 
 **Curves input format** (in create/edit modals):
 ```
@@ -229,7 +303,7 @@ curve: keel
 ...
 ```
 
-### 3.8 Data Persistence
+### 3.9 Data Persistence
 
 Hull data is stored as `.hull` files (JSON format following the `HullModel` schema) in the directory specified by `DATA_PATH`. No database is required. Filenames are derived from the hull name via `sanitize_filename()` (lowercased, special characters removed, spaces replaced with underscores).
 
@@ -318,6 +392,25 @@ For each heel angle:
 4. The **righting arm (GZ)** measures the transverse distance between the rotated CG and the CB — positive GZ means the hull tends to right itself.
 5. The **vanishing angle** is where GZ crosses zero (the hull will capsize beyond this point).
 
+### 5.5 Resistance & Performance Computation
+
+For a given speed $V$:
+1. **Calculate geometric parameters**: Waterline length ($L_{WL}$), wetted surface ($S_w$), form coefficients ($C_p$, etc.)
+2. **Compute dimensionless numbers**:
+   - Reynolds number: $Re = \frac{V \times L_{WL}}{\nu}$ (determines turbulent flow characteristics)
+   - Froude number: $F_n = \frac{V}{\sqrt{g \times L_{WL}}}$ (determines wave-making regime)
+3. **Calculate resistance coefficients**:
+   - Friction coefficient from ITTC 1957: $C_f = \frac{0.075}{(\log_{10} Re - 2)^2} + \Delta C_f$
+   - Residuary coefficient from empirical model: $C_r = f(F_n, C_p)$
+4. **Compute resistance forces**:
+   - Frictional: $R_f = \frac{1}{2} \rho V^2 S_w C_f$
+   - Residuary: $R_r = \frac{1}{2} \rho V^2 S_w C_r$
+   - Total: $R_{total} = R_f + R_r$
+5. **Calculate power requirements**:
+   - Effective power: $P_e = R_{total} \times V$
+   - Paddler power: $P_{paddler} = \frac{P_e}{\eta}$ (accounting for propulsion efficiency)
+6. **Generate resistance curves**: Repeat for speed range to produce resistance vs. speed and power vs. speed curves
+
 ---
 
 ## 6. Technology Stack
@@ -362,7 +455,9 @@ kayakish/
 │   │   ├── hull.py             # Hull geometry & hydrostatics
 │   │   └── weight.py           # Weight + CG container
 │   ├── analysis/
-│   │   └── stability.py        # GZ curve calculation
+│   │   ├── stability.py        # GZ curve calculation
+│   │   ├── resistance.py       # Resistance & power estimation
+│   │   └── hull_parameters.py  # Form coefficients & dimensions
 │   ├── services/               # (reserved for future service layer)
 │   └── utils/
 │       ├── __init__.py
@@ -455,19 +550,22 @@ User (Browser)                API Server                     Filesystem
 | **Iterative waterline** | A convergence loop adjusts the waterline until displacement matches the target weight, avoiding the need for an analytical waterline solver. |
 | **File-based persistence** | `.hull` files in a data directory keep the system simple — no database required. Suitable for the expected number of hull models. |
 | **Vanilla frontend** | No framework dependency keeps the frontend lightweight and easy to deploy as static files alongside the API. |
-| **Canvas-based rendering** | The HTML5 Canvas API provides sufficient drawing capability for 2D hull projections, profile views, and stability graphs without requiring a 3D library. |
+| **Canvas-based rendering** | The HTML5 Canvas API provides sufficient drawing capability for 2D hull projections, profile views, stability graphs, and resistance curves without requiring a 3D library. |
 | **PCHIP interpolation for x-monotonic curves** | `PchipInterpolator` preserves the shape of the curve without overshooting, which is critical for hull fairness. |
 | **Chord-length parametrization fallback** | For curves that are not monotonic in x (e.g., a keel with a hook), the system falls back to chord-length parametrization with `CubicSpline`. |
+| **ITTC 1957 friction line** | Standard method for estimating frictional resistance in turbulent flow, widely accepted in naval architecture. |
+| **Empirical residuary resistance** | Uses published data for slender displacement hulls (kayaks/canoes) rather than complex CFD, providing reasonable estimates with minimal computational cost. |
 
 ---
 
 ## 10. Extensibility Points
 
 - **`src/services/`** — reserved for future service layer abstractions (e.g., hull comparison, optimization).
-- **Additional analysis modules** — new modules in `src/analysis/` can implement features like wave resistance estimation, prismatic coefficient calculation, etc.
+- **Additional analysis modules** — new modules in `src/analysis/` can implement features like added resistance in waves, parametric hull optimization, CFD integration, etc.
 - **Database backend** — the file-based storage could be replaced with a database by modifying only the route handlers.
 - **3D visualization** — the canvas rendering could be upgraded to WebGL/Three.js for true 3D interactive views.
 - **Weight distribution** — the `Weight` class exists as a foundation for multi-item weight schedules (gear, paddler position, etc.).
+- **Advanced resistance models** — implement Holtrop-Mennen method or other regression-based models for improved accuracy across different hull types.
 
 ---
 
@@ -475,9 +573,12 @@ User (Browser)                API Server                     Filesystem
 
 Tests are located in `test/` and use `pytest`:
 
-- **`test/unit/test_hull.py`** — unit tests for hull geometry calculations.
-- **`test/unit/test_profile.py`** — unit tests for profile area, centroid, and volume computations.
-- **`test/scripts/`** — standalone visualization scripts for debugging (profile areas, CB movement, profile rendering).
+- **`test/unit/test_hull.py`** — unit tests for hull geometry calculations
+- **`test/unit/test_profile.py`** — unit tests for profile area, centroid, and volume computations
+- **`test/unit/test_stability.py`** — unit tests for stability analysis
+- **`test/unit/test_hull_parameters.py`** — unit tests for form coefficients, waterline dimensions, and wetted surface
+- **`test/unit/test_resistance.py`** — unit tests for resistance calculations (ITTC friction, residuary resistance, power)
+- **`test/scripts/`** — standalone visualization scripts for debugging (profile areas, CB movement, profile rendering)
 
 Run tests with:
 ```bash

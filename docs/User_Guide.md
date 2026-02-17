@@ -14,10 +14,11 @@
 5. [Viewing Hull Visualizations](#5-viewing-hull-visualizations)
 6. [Viewing Profile Cross-Sections](#6-viewing-profile-cross-sections)
 7. [Running Stability Analysis](#7-running-stability-analysis)
-8. [Editing and Deleting Hulls](#8-editing-and-deleting-hulls)
-9. [Understanding the Results](#9-understanding-the-results)
-10. [Sample Hull Data](#10-sample-hull-data)
-11. [Tips and Best Practices](#11-tips-and-best-practices)
+8. [Running Resistance Analysis](#8-running-resistance-analysis)
+9. [Editing and Deleting Hulls](#9-editing-and-deleting-hulls)
+10. [Understanding the Results](#10-understanding-the-results)
+11. [Sample Hull Data](#11-sample-hull-data)
+12. [Tips and Best Practices](#12-tips-and-best-practices)
 
 ---
 
@@ -30,7 +31,7 @@ Make sure the Kayakish server is running:
 
 When you open the application in a browser, you'll see:
 - A **left sidebar** with the list of available kayaks and a summary panel.
-- A **main area** with three tabs: Visualization, Stability, and Profiles.
+- A **main area** with four tabs: Visualization, Stability, Resistance, and Profiles.
 
 ---
 
@@ -398,7 +399,130 @@ curl -X POST http://localhost:8000/hulls/kayak_001/stability \
 
 ---
 
-## 8. Editing and Deleting Hulls
+## 8. Running Resistance Analysis
+
+The resistance analysis feature estimates the force, power, and energy required to move your kayak at various speeds, based on the hull geometry and water conditions.
+
+### Via the Web UI
+
+1. Select a kayak from the list.
+2. Switch to the **Resistance** tab.
+3. Configure the analysis parameters:
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| **Speed Unit** | Choose between m/s, km/h, or knots | `km/h` |
+| **Min Speed** | Starting speed for the analysis | `1` (depends on unit) |
+| **Max Speed** | Ending speed for the analysis | `10` (depends on unit) |
+| **Speed Step** | Increment between speed points | `0.5` (depends on unit) |
+| **Water Type** | Fresh water or salt water (affects density) | `Fresh` |
+| **Propulsion Efficiency** | Paddle efficiency (0.0-1.0) | `0.60` (60%) |
+| **Roughness Allowance** | Hull surface roughness coefficient | `0.0004` |
+
+**Roughness Allowance Guide:**
+- `0.0002`: Very smooth (polished composite)
+- `0.0004`: Standard kayak finish (gelcoat, thermoformed plastic)
+- `0.0006`: Rougher surfaces (worn or textured)
+
+4. Click **Analyze Resistance**.
+5. The system computes:
+   - Hull form coefficients (block, prismatic, midship, waterplane)
+   - Wetted surface area and waterline dimensions
+   - Hull speed estimate
+   - Resistance components (frictional and wave-making) at each speed
+   - Power requirements (effective power and paddler power)
+
+6. Results are displayed as:
+   - **Parameters table**: Hull speed, waterline dimensions, wetted surface, form coefficients
+   - **Total Resistance vs. Speed graph**: Shows how drag force increases with speed
+   - **Resistance Components graph**: Breakdown of frictional (blue) and residuary/wave (red) resistance
+   - **Power Requirements graph**: Effective power and paddler power needed at each speed
+
+### Via the API
+
+```bash
+curl -X POST http://localhost:8000/hulls/kayak_001/resistance \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hull_name": "Kayak 001",
+    "speed_unit": "kmh",
+    "min_speed": 1.0,
+    "max_speed": 10.0,
+    "speed_step": 0.5,
+    "water_type": "fresh",
+    "propulsion_efficiency": 0.60,
+    "roughness_allowance": 0.0004
+  }'
+```
+
+### API Response
+
+```json
+{
+  "hull_speed_ms": 2.89,
+  "hull_speed_kmh": 10.4,
+  "hull_speed_knots": 5.62,
+  "waterline_length": 4.95,
+  "waterline_beam": 0.58,
+  "wetted_surface": 2.35,
+  "block_coefficient": 0.48,
+  "prismatic_coefficient": 0.55,
+  "midship_coefficient": 0.87,
+  "waterplane_coefficient": 0.73,
+  "resistance_points": [
+    {
+      "speed": 1.39,
+      "speed_kmh": 5.0,
+      "speed_knots": 2.7,
+      "froude_number": 0.20,
+      "reynolds_number": 5.8e6,
+      "friction_coefficient": 0.00304,
+      "residuary_coefficient": 0.00001,
+      "frictional_resistance": 6.3,
+      "residuary_resistance": 0.02,
+      "total_resistance": 6.32,
+      "effective_power": 8.78,
+      "paddler_power": 14.6
+    }
+  ]
+}
+```
+
+### Resistance Parameters Reference
+
+| Parameter | API Field | Type | Required | Description |
+|-----------|-----------|------|----------|-------------|
+| Hull name | `hull_name` | string | Yes | Name of the hull to analyze |
+| Speed unit | `speed_unit` | string | No | `"ms"`, `"kmh"`, or `"knots"`. Default: `"ms"` |
+| Min speed | `min_speed` | float | No | Minimum speed in selected unit. Default: `0.5` m/s |
+| Max speed | `max_speed` | float | No | Maximum speed in selected unit. Default: `3.5` m/s |
+| Speed step | `speed_step` | float | No | Speed increment. Default: `0.1` in selected unit |
+| Water type | `water_type` | string | No | `"fresh"` (1000 kg/m³) or `"salt"` (1025 kg/m³). Default: `"fresh"` |
+| Propulsion efficiency | `propulsion_efficiency` | float | No | Paddle efficiency (0-1). Default: `0.60` |
+| Roughness allowance | `roughness_allowance` | float | No | Surface roughness coefficient. Default: `0.0004` |
+
+### Understanding the Results
+
+**Hull Form Coefficients:**
+- **Block Coefficient ($C_b$)**: Fullness of hull relative to a rectangular box. Lower = finer hull. Typical kayaks: 0.45–0.55
+- **Prismatic Coefficient ($C_p$)**: How volume is distributed along length. Lower = ends are finer. Typical kayaks: 0.50–0.60
+- **Midship Coefficient ($C_m$)**: Fullness of the largest cross-section. Typical kayaks: 0.80–0.90
+- **Waterplane Coefficient ($C_{wp}$)**: Fullness of waterplane area. Affects initial stability. Typical kayaks: 0.70–0.80
+
+**Resistance Components:**
+- **Frictional Resistance**: Viscous drag on wetted surface (70–90% of total at typical paddling speeds)
+- **Residuary Resistance**: Wave-making and pressure drag (becomes significant near hull speed)
+- **Total Resistance**: Sum of frictional and residuary components
+
+**Power:**
+- **Effective Power**: Power needed to overcome hull resistance (ignores propulsion losses)
+- **Paddler Power**: Actual power the paddler must produce (accounts for paddle efficiency)
+
+**Hull Speed**: Theoretical maximum displacement speed, approximately $1.34 \sqrt{L_{WL}}$ knots. Resistance increases dramatically beyond this speed.
+
+---
+
+## 9. Editing and Deleting Hulls
 
 ### Edit (Web UI)
 
@@ -430,7 +554,7 @@ curl -X DELETE http://localhost:8000/hulls/Kayak%20001
 
 ---
 
-## 9. Understanding the Results
+## 10. Understanding the Results
 
 ### Hull Summary
 
@@ -465,7 +589,7 @@ Click **+ Details** to see the full list of curves and profiles with their point
 
 ---
 
-## 10. Sample Hull Data
+## 11. Sample Hull Data
 
 ### Minimal Example (2 curves)
 
@@ -526,7 +650,7 @@ curve: keel
 
 ---
 
-## 11. Tips and Best Practices
+## 12. Tips and Best Practices
 
 ### General
 
@@ -541,6 +665,21 @@ curve: keel
 - Use **smaller steps** (e.g., 1°) around angles of interest for more precise results.
 - A **paddler CG height** of 0.25 m is typical for a seated paddler; increase it for a higher seating position.
 - Enable **Break on vanishing** to speed up analysis when you only need the positive stability range.
+
+### Resistance Analysis
+
+- **Speed ranges**: Start with 1–10 km/h for recreational paddling, or 1–8 km/h for typical touring speeds
+- **Hull speed**: Resistance increases dramatically beyond hull speed (typically 8–12 km/h for kayaks). This represents the theoretical maximum for displacement hulls
+- **Propulsion efficiency**: 0.60 (60%) is typical for recreational paddlers. Experienced paddlers may achieve 0.65–0.70; beginners closer to 0.50
+- **Water type**: Use "salt" for ocean kayaking (slightly higher resistance due to increased density and buoyancy shift)
+- **Interpreting curves**:
+  - Frictional resistance dominates at low speeds (linear-ish growth with V²)
+  - Residuary resistance becomes significant near Froude number 0.35–0.40
+  - Power requirements grow as V³, so doubling speed requires ~8× more power
+- **Form coefficients**:
+  - Lower $C_b$ and $C_p$ = finer hull = lower wave resistance but possibly wetter ride
+  - Higher $C_b$ and $C_p$ = fuller hull = more cargo capacity but higher resistance
+  - Use resistance analysis to compare design tradeoffs
 
 ### Curve Data Quality
 
