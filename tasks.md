@@ -153,11 +153,11 @@ The glossary footer says:
 - [x] **R2. Waterline Length & Beam** — Added `waterline_length()` and `waterline_beam()` methods to `Hull`, finding the extent of the hull at the computed waterline.
 - [x] **R3. Hull Form Coefficients** — Computed block coefficient ($C_b$), prismatic coefficient ($C_p$), midship coefficient ($C_m$), and waterplane coefficient ($C_{wp}$) from existing volume/area data. Added to new `src/analysis/hull_parameters.py` module.
 
-## Phase 2: Resistance Calculations
+## Phase 2: Resistance Calculations ✅ COMPLETED
 
-- [ ] **R4. Frictional Resistance (ITTC 1957)** — Implement `calculate_frictional_resistance(speed, Lw, Sw)` using the ITTC correlation line and Reynolds number in `src/analysis/resistance.py`.
-- [ ] **R5. Residuary (Wave-Making) Resistance** — Implement empirical $C_r$ vs Froude number model for slender displacement hulls in `src/analysis/resistance.py`.
-- [ ] **R6. Total Resistance & Power Curves** — Combine frictional + residuary resistance; compute effective power ($P = R \times V$), paddler power (with efficiency factor), and hull speed estimate.
+- [x] **R4. Frictional Resistance (ITTC 1957)** — Implemented `calculate_frictional_resistance(speed, Lw, Sw)` using the ITTC correlation line and Reynolds number in `src/analysis/resistance.py`. Includes roughness allowance for different hull finishes.
+- [x] **R5. Residuary (Wave-Making) Resistance** — Implemented empirical $C_r$ vs Froude number model for slender displacement hulls in `src/analysis/resistance.py`. Model accounts for speed regimes from low wave resistance (Fn < 0.3) to high wave resistance (Fn > 0.4).
+- [x] **R6. Total Resistance & Power Curves** — Combined frictional + residuary resistance; computed effective power ($P = R \times V$), paddler power (with efficiency factor), and hull speed estimate. Added `ResistanceResult` dataclass and functions for resistance curves across speed ranges.
 
 ## Phase 3: API & Visualization
 
@@ -167,5 +167,5 @@ The glossary footer says:
 ## Phase 4: Testing & Documentation
 
 - [x] **R9. Unit Tests (Phase 1)** — Wrote comprehensive tests for wetted surface area, waterline length/beam, and hull form coefficients. Tests include Profile.wetted_perimeter() (7 tests), Hull wetted surface/waterline methods (12 tests), and hull_parameters functions (24 tests). Total: 43 Phase 1 tests passing.
-- [ ] **R9. Unit Tests (Phase 2-3)** — Write tests for ITTC friction, residuary resistance, and power calculations.
+- [x] **R9. Unit Tests (Phase 2)** — Wrote comprehensive tests for resistance calculations including Reynolds/Froude numbers (12 tests), ITTC friction coefficient (5 tests), frictional resistance (5 tests), residuary resistance (7 tests), power calculations (9 tests), complete resistance calculation (5 tests), resistance curves (2 tests), energy calculations (5 tests), and integration tests (3 tests). Total: 61 Phase 2 tests passing.
 - [ ] **R10. Documentation** — Update `docs/Architecture.md` and `docs/User_Guide.md` with the new resistance analysis feature.
