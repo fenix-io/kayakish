@@ -353,7 +353,9 @@ Rotation of the kayak about its longitudinal axis (tilting side to side). Also c
 **Related Terms:** Roll, Lean, Heel Angle
 
 ### Heel Angle
-The angle of rotation about the longitudinal axis, measured from upright position. Positive typically indicates tilt to starboard.
+The angle of rotation about the longitudinal axis, measured from upright position.
+
+> **Convention note:** In standard naval architecture, positive heel = starboard down. However, the Kayakish codebase uses the **mathematical right-hand rule** for all rotations, where a positive angle about the X-axis rotates port down (starboard up). To simulate heel to starboard in code, pass a **negative** angle to `rotate_x()` or `apply_rotation_on_x_axis()`.
 
 **Units:** degrees (°)  
 **Range:** Typically 0° to 90°  

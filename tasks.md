@@ -127,7 +127,7 @@ The glossary footer says:
 
 ## G. Minor Code Issues Found (not Glossary)
 
-1. **Rotation convention inconsistency**: `Point3D.rotate_x()` negates the angle; `Spline3D.apply_rotation_on_x_axis()` does not. Both are used for heel. The stability pipeline only uses the spline method, so no runtime bug, but API inconsistency.
+1. ~~**Rotation convention inconsistency**: `Point3D.rotate_x()` negates the angle; `Spline3D.apply_rotation_on_x_axis()` does not.~~ **FIXED** — removed negation from `Point3D.rotate_x()` so both methods use the standard right-hand rule rotation matrix. **Note:** this is the mathematical convention, not the naval one (positive heel = starboard down). Documented in Architecture.md (§4 Rotation Convention) and Glossary.md (Heel Angle entry).
 2. **Typo in k05.hull**: "starborad gunnel" should be "starboard gunnel"
 3. **Stale docstring**: Point3D mentions `level` parameter that doesn't exist
 

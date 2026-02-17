@@ -163,11 +163,11 @@ class TestPoint3DRotation:
         assert p2.z == pytest.approx(3.0)
 
     def test_rotate_x_90_degrees(self):
-        """Test rotation around x-axis by 90 degrees."""
+        """Test rotation around x-axis by 90 degrees (right-hand rule)."""
         p = Point3D(1, 0, 1)
         p2 = p.rotate_x(90)
         assert p2.x == pytest.approx(1.0)
-        assert p2.y == pytest.approx(1.0, abs=1e-10)
+        assert p2.y == pytest.approx(-1.0, abs=1e-10)
         assert p2.z == pytest.approx(0.0, abs=1e-10)
 
     def test_rotate_x_180_degrees(self):

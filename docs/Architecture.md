@@ -130,7 +130,7 @@ This is the computational core of the application.
 
 A lightweight 3D point/vector class with:
 - Arithmetic operators (`+`, `-`, `*`, `/`)
-- Rotation around X, Y, Z axes (important for heel calculations)
+- Rotation around X, Y, Z axes (important for heel calculations; uses right-hand rule — see [Rotation Convention](#rotation-convention))
 - Distance, dot product, cross product
 - Uses `__slots__` for memory efficiency
 
@@ -146,7 +146,7 @@ Parametric cubic spline interpolation through 3D control points:
 - **Key methods:**
   - `eval_x(x)` — evaluate the curve at a given x-coordinate (uses Brent's root-finding for chord parametrization).
   - `eval_t(t)` — evaluate at a raw parameter value.
-  - `apply_rotation_on_x_axis(origin, angle)` — returns a new spline with all control points rotated around the x-axis (used for heel simulation).
+  - `apply_rotation_on_x_axis(origin, angle)` — returns a new spline with all control points rotated around the x-axis (used for heel simulation; uses right-hand rule — see [Rotation Convention](#rotation-convention)).
   - `tangent(t)`, `curvature(t)`, `normal(t)` — differential geometry operations.
   - `sample(n)` — generate n evenly-spaced points along the curve.
 
@@ -246,6 +246,15 @@ All coordinates follow a right-hand orthogonal system:
 | **z** | Bottom → Top (vertical) | 0 at the deepest hull point |
 
 The system assumes **port/starboard symmetry**: only starboard (or port) curves need to be defined; the mirror is generated automatically during the build process. The keel curve (y = 0) is not mirrored.
+
+### Rotation Convention
+
+All rotations in the codebase (`Point3D.rotate_x()`, `Spline3D.apply_rotation_on_x_axis()`) use the **standard right-hand rule** about the X-axis:
+
+- **Positive angle** → port side goes down (starboard up).
+- **Negative angle** → starboard side goes down (port up).
+
+> **Note:** This differs from the standard **naval architecture convention**, where positive heel is defined as starboard down. The code uses the mathematical/physics convention for consistency with standard rotation matrices. When calling rotation methods for heel simulation, pass a **negative angle** to simulate heel to starboard.
 
 ---
 
