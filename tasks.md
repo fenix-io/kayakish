@@ -147,11 +147,11 @@ The glossary footer says:
 
 > Planning document: [docs/Resistance_analysis_planning.md](docs/Resistance_analysis_planning.md)
 
-## Phase 1: Geometry Extensions
+## Phase 1: Geometry Extensions ✅ COMPLETED
 
-- [ ] **R1. Wetted Surface Area** — Add `wetted_perimeter()` to `Profile` and integrate along hull length in `Hull` to compute total wetted surface area $S_w$.
-- [ ] **R2. Waterline Length & Beam** — Add `waterline_length()` and `waterline_beam()` methods to `Hull`, finding the extent of the hull at the computed waterline.
-- [ ] **R3. Hull Form Coefficients** — Compute block coefficient ($C_b$), prismatic coefficient ($C_p$), midship coefficient ($C_m$), and waterplane coefficient ($C_{wp}$) from existing volume/area data. Add to a new `src/analysis/hull_parameters.py` module.
+- [x] **R1. Wetted Surface Area** — Added `wetted_perimeter()` to `Profile` and integrated along hull length in `Hull` to compute total wetted surface area $S_w$.
+- [x] **R2. Waterline Length & Beam** — Added `waterline_length()` and `waterline_beam()` methods to `Hull`, finding the extent of the hull at the computed waterline.
+- [x] **R3. Hull Form Coefficients** — Computed block coefficient ($C_b$), prismatic coefficient ($C_p$), midship coefficient ($C_m$), and waterplane coefficient ($C_{wp}$) from existing volume/area data. Added to new `src/analysis/hull_parameters.py` module.
 
 ## Phase 2: Resistance Calculations
 
@@ -166,5 +166,6 @@ The glossary footer says:
 
 ## Phase 4: Testing & Documentation
 
-- [ ] **R9. Unit Tests** — Write tests for wetted surface, form coefficients, ITTC friction, residuary resistance, and power calculations.
+- [x] **R9. Unit Tests (Phase 1)** — Wrote comprehensive tests for wetted surface area, waterline length/beam, and hull form coefficients. Tests include Profile.wetted_perimeter() (7 tests), Hull wetted surface/waterline methods (12 tests), and hull_parameters functions (24 tests). Total: 43 Phase 1 tests passing.
+- [ ] **R9. Unit Tests (Phase 2-3)** — Write tests for ITTC friction, residuary resistance, and power calculations.
 - [ ] **R10. Documentation** — Update `docs/Architecture.md` and `docs/User_Guide.md` with the new resistance analysis feature.

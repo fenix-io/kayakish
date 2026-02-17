@@ -138,3 +138,35 @@ class Profile:
         cg_z = cz
 
         return volume, Point3D(cg_x, cg_y, cg_z)
+
+    def wetted_perimeter(self) -> float:
+        """Calculate the wetted perimeter of the submerged portion of the profile.
+
+        The wetted perimeter is the arc length of the profile below the waterline,
+        measured as the sum of Euclidean distances between consecutive points.
+        This is used to calculate the wetted surface area of the hull.
+
+        Returns:
+            float: Wetted perimeter in meters
+
+        Note:
+            Points should already be sorted in circular order before calling this method.
+            For submerged profiles (from _get_points_below_waterline), this is guaranteed.
+        """
+        if not self.is_valid():
+            return 0.0
+
+        perimeter = 0.0
+        n = len(self.points)
+
+        for i in range(n):
+            p1 = self.points[i]
+            p2 = self.points[(i + 1) % n]  # Next point (wrap around)
+
+            # Calculate Euclidean distance in y-z plane
+            dy = p2.y - p1.y
+            dz = p2.z - p1.z
+            distance = np.sqrt(dy * dy + dz * dz)
+            perimeter += distance
+
+        return perimeter

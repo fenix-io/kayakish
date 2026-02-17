@@ -529,3 +529,323 @@ class TestHullBuildIntegration:
         # This should raise an exception because the hull is too small to support 85kg
         with pytest.raises(WaterlineCalculationError):
             hull.build(data)
+
+
+class TestHullWettedSurfaceArea:
+    """Tests for wetted_surface_area method."""
+
+    def test_wetted_surface_area_returns_positive(self):
+        """Test wetted surface area returns a positive value."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+                {
+                    "name": "starboard_gunnel",
+                    "points": [[0, 0.25, 0.15], [2.5, 0.5, 0.25], [5, 0.25, 0.15]],
+                },
+                {
+                    "name": "port_gunnel",
+                    "points": [[0, -0.25, 0.15], [2.5, -0.5, 0.25], [5, -0.25, 0.15]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+        sw = hull.wetted_surface_area()
+        assert sw > 0
+
+    def test_wetted_surface_area_increases_with_waterline(self):
+        """Test wetted surface area increases with higher waterline."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+                {
+                    "name": "starboard_gunnel",
+                    "points": [[0, 0.25, 0.15], [2.5, 0.5, 0.25], [5, 0.25, 0.15]],
+                },
+                {
+                    "name": "port_gunnel",
+                    "points": [[0, -0.25, 0.15], [2.5, -0.5, 0.25], [5, -0.25, 0.15]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+        sw1 = hull.wetted_surface_area(waterline=0.10)
+        sw2 = hull.wetted_surface_area(waterline=0.15)
+        assert sw2 > sw1
+
+    def test_wetted_surface_area_no_waterline_raises_error(self):
+        """Test wetted surface area without waterline raises error."""
+        hull = Hull()
+        hull.waterline = None
+        with pytest.raises(ValueError, match="Invalid waterline"):
+            hull.wetted_surface_area()
+
+    def test_wetted_surface_area_custom_step(self):
+        """Test wetted surface area with custom step size."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+                {
+                    "name": "starboard_gunnel",
+                    "points": [[0, 0.25, 0.15], [2.5, 0.5, 0.25], [5, 0.25, 0.15]],
+                },
+                {
+                    "name": "port_gunnel",
+                    "points": [[0, -0.25, 0.15], [2.5, -0.5, 0.25], [5, -0.25, 0.15]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+        # Smaller step should give slightly different (more accurate) result
+        sw_coarse = hull.wetted_surface_area(step=0.10)
+        sw_fine = hull.wetted_surface_area(step=0.05)
+        # Both should be positive and reasonably close
+        assert sw_coarse > 0
+        assert sw_fine > 0
+        assert abs(sw_coarse - sw_fine) / sw_fine < 0.05  # Within 5%
+
+
+class TestHullWaterlineLength:
+    """Tests for waterline_length method."""
+
+    def test_waterline_length_returns_positive(self):
+        """Test waterline length returns a positive value."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+                {
+                    "name": "starboard_gunnel",
+                    "points": [[0, 0.25, 0.15], [2.5, 0.5, 0.25], [5, 0.25, 0.15]],
+                },
+                {
+                    "name": "port_gunnel",
+                    "points": [[0, -0.25, 0.15], [2.5, -0.5, 0.25], [5, -0.25, 0.15]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+        lwl = hull.waterline_length()
+        assert lwl > 0
+
+    def test_waterline_length_less_than_loa(self):
+        """Test waterline length is less than or equal to LOA."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+                {
+                    "name": "starboard_gunnel",
+                    "points": [[0, 0.25, 0.15], [2.5, 0.5, 0.25], [5, 0.25, 0.15]],
+                },
+                {
+                    "name": "port_gunnel",
+                    "points": [[0, -0.25, 0.15], [2.5, -0.5, 0.25], [5, -0.25, 0.15]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+        lwl = hull.waterline_length()
+        loa = hull.length()
+        assert lwl <= loa
+
+    def test_waterline_length_increases_with_waterline(self):
+        """Test waterline length changes with waterline height."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+                {
+                    "name": "starboard_gunnel",
+                    "points": [[0, 0.25, 0.15], [2.5, 0.5, 0.25], [5, 0.25, 0.15]],
+                },
+                {
+                    "name": "port_gunnel",
+                    "points": [[0, -0.25, 0.15], [2.5, -0.5, 0.25], [5, -0.25, 0.15]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+        # Waterline length depends on hull shape - can increase or decrease with height
+        lwl1 = hull.waterline_length(waterline=0.08)
+        lwl2 = hull.waterline_length(waterline=0.15)
+        # Verify both are positive and different
+        assert lwl1 > 0
+        assert lwl2 > 0
+        assert lwl1 != lwl2
+
+    def test_waterline_length_no_waterline_raises_error(self):
+        """Test waterline length without waterline raises error."""
+        hull = Hull()
+        hull.waterline = None
+        with pytest.raises(ValueError, match="Invalid waterline"):
+            hull.waterline_length()
+
+
+class TestHullWaterlineBeam:
+    """Tests for waterline_beam method."""
+
+    def test_waterline_beam_returns_positive(self):
+        """Test waterline beam returns a positive value."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+                {
+                    "name": "starboard_gunnel",
+                    "points": [[0, 0.25, 0.15], [2.5, 0.5, 0.25], [5, 0.25, 0.15]],
+                },
+                {
+                    "name": "port_gunnel",
+                    "points": [[0, -0.25, 0.15], [2.5, -0.5, 0.25], [5, -0.25, 0.15]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+        bwl = hull.waterline_beam()
+        assert bwl > 0
+
+    def test_waterline_beam_less_than_or_equal_to_beam(self):
+        """Test waterline beam is less than or equal to maximum beam."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+                {
+                    "name": "starboard_gunnel",
+                    "points": [[0, 0.25, 0.15], [2.5, 0.5, 0.25], [5, 0.25, 0.15]],
+                },
+                {
+                    "name": "port_gunnel",
+                    "points": [[0, -0.25, 0.15], [2.5, -0.5, 0.25], [5, -0.25, 0.15]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+        bwl = hull.waterline_beam()
+        beam = hull.beam()
+        # Waterplane beam should be less than or equal to maximum beam
+        assert bwl <= beam * 1.01  # Small tolerance for numerical precision
+
+    def test_waterline_beam_at_different_waterlines(self):
+        """Test waterline beam at different waterlines."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+                {
+                    "name": "starboard_gunnel",
+                    "points": [[0, 0.25, 0.15], [2.5, 0.5, 0.25], [5, 0.25, 0.15]],
+                },
+                {
+                    "name": "port_gunnel",
+                    "points": [[0, -0.25, 0.15], [2.5, -0.5, 0.25], [5, -0.25, 0.15]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+        # Both should be positive
+        bwl1 = hull.waterline_beam(waterline=0.08)
+        bwl2 = hull.waterline_beam(waterline=0.15)
+        assert bwl1 > 0
+        assert bwl2 > 0
+
+    def test_waterline_beam_no_waterline_raises_error(self):
+        """Test waterline beam without waterline raises error."""
+        hull = Hull()
+        hull.waterline = None
+        with pytest.raises(ValueError, match="Invalid waterline"):
+            hull.waterline_beam()

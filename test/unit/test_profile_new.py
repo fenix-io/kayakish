@@ -364,3 +364,101 @@ class TestProfileCalculateVolumeAndCg:
         # CG location should be the same regardless of step
         assert cg1.y == pytest.approx(cg2.y, abs=1e-6)
         assert cg1.z == pytest.approx(cg2.z, abs=1e-6)
+
+
+class TestProfileWettedPerimeter:
+    """Tests for wetted_perimeter method."""
+
+    def test_wetted_perimeter_empty_profile(self):
+        """Test wetted perimeter with empty profile."""
+        profile = Profile(station=1.0)
+        perimeter = profile.wetted_perimeter()
+        assert perimeter == 0.0
+
+    def test_wetted_perimeter_two_points(self):
+        """Test wetted perimeter with two points (invalid profile)."""
+        points = [Point3D(1.0, 0.0, 0.0), Point3D(1.0, 1.0, 0.0)]
+        profile = Profile(station=1.0, points=points)
+        perimeter = profile.wetted_perimeter()
+        assert perimeter == 0.0  # Invalid profile returns 0
+
+    def test_wetted_perimeter_triangle(self):
+        """Test wetted perimeter with triangular profile."""
+        # Equilateral triangle with side length ~1.732
+        import math
+
+        points = [
+            Point3D(1.0, 0.0, 0.0),
+            Point3D(1.0, 1.0, 0.0),
+            Point3D(1.0, 0.5, math.sqrt(3) / 2),
+        ]
+        profile = Profile(station=1.0, points=points)
+        perimeter = profile.wetted_perimeter()
+
+        # Expected: 1.0 + sqrt(0.25 + 0.75) + 1.0 = 1 + 1 + 1 = 3.0 roughly
+        # (sides of approximately equal length)
+        assert perimeter > 2.5
+        assert perimeter < 3.5
+
+    def test_wetted_perimeter_square(self):
+        """Test wetted perimeter with square profile."""
+        points = [
+            Point3D(2.0, 0.0, 0.0),
+            Point3D(2.0, 2.0, 0.0),
+            Point3D(2.0, 2.0, 2.0),
+            Point3D(2.0, 0.0, 2.0),
+        ]
+        profile = Profile(station=2.0, points=points)
+        perimeter = profile.wetted_perimeter()
+
+        # Square with side 2, perimeter = 4*2 = 8
+        assert perimeter == pytest.approx(8.0, abs=1e-6)
+
+    def test_wetted_perimeter_rectangle(self):
+        """Test wetted perimeter with rectangular profile."""
+        points = [
+            Point3D(1.0, 0.0, 0.0),
+            Point3D(1.0, 3.0, 0.0),
+            Point3D(1.0, 3.0, 2.0),
+            Point3D(1.0, 0.0, 2.0),
+        ]
+        profile = Profile(station=1.0, points=points)
+        perimeter = profile.wetted_perimeter()
+
+        # Rectangle 3×2, perimeter = 2*(3+2) = 10
+        assert perimeter == pytest.approx(10.0, abs=1e-6)
+
+    def test_wetted_perimeter_circle_approximation(self):
+        """Test wetted perimeter with many points approximating a circle."""
+        import math
+
+        # Circle with radius 1.0
+        radius = 1.0
+        n_points = 20
+        points = []
+        for i in range(n_points):
+            angle = 2 * math.pi * i / n_points
+            y = radius * math.cos(angle)
+            z = radius * math.sin(angle)
+            points.append(Point3D(1.0, y, z))
+
+        profile = Profile(station=1.0, points=points)
+        perimeter = profile.wetted_perimeter()
+
+        # Expected circumference: 2*pi*r = 2*pi*1 ≈ 6.283
+        expected = 2 * math.pi * radius
+        # With 20 points, approximation should be within 5%
+        assert perimeter == pytest.approx(expected, rel=0.05)
+
+    def test_wetted_perimeter_positive_for_valid_profile(self):
+        """Test wetted perimeter is always positive for valid profiles."""
+        # Arbitrary valid profile
+        points = [
+            Point3D(1.5, 0.0, 0.3),
+            Point3D(1.5, 0.5, 0.1),
+            Point3D(1.5, 0.3, 0.5),
+            Point3D(1.5, -0.2, 0.4),
+        ]
+        profile = Profile(station=1.5, points=points)
+        perimeter = profile.wetted_perimeter()
+        assert perimeter > 0

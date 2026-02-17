@@ -42,6 +42,208 @@ class Hull:
     def depth(self):
         return self.max_z - self.min_z
 
+    def wetted_surface_area(self, waterline: float = None, step: float = 0.05) -> float:
+        """Calculate the total wetted surface area of the hull below the waterline.
+
+        The wetted surface area is the total area of hull surface in contact with water,
+        calculated by integrating the wetted perimeter along the hull length using the
+        trapezoidal rule.
+
+        Args:
+            waterline: The z-coordinate of the waterline. If None, uses self.waterline.
+            step: The longitudinal step size for integration in meters. Default 0.05 m.
+
+        Returns:
+            float: Wetted surface area in square meters (m²)
+
+        Raises:
+            ValueError: If waterline is not set or invalid
+
+        Example:
+            >>> hull.wetted_surface_area()  # Uses hull.waterline
+            2.345  # m²
+            >>> hull.wetted_surface_area(waterline=0.15)  # Custom waterline
+            2.456  # m²
+        """
+        if waterline is None:
+            waterline = self.waterline
+        if waterline is None or waterline <= 0:
+            raise ValueError(
+                f"Invalid waterline: {waterline}. "
+                "Ensure waterline is calculated before calling wetted_surface_area()."
+            )
+
+        x = self.min_x
+        perimeters = []
+        stations = []
+
+        # Calculate wetted perimeter at each station
+        while x <= self.max_x:
+            points = []
+            for curve in self.curves:
+                try:
+                    point = curve.eval_x(x)
+                    points.append(point)
+                except ValueError:
+                    continue
+
+            if len(points) >= 3:
+                # Get points below waterline
+                points_below = self._get_points_below_waterline(points, waterline)
+                profile = Profile(x, points_below)
+
+                if profile.is_valid():
+                    perimeter = profile.wetted_perimeter()
+                    perimeters.append(perimeter)
+                    stations.append(x)
+
+            x += step
+
+        if len(perimeters) < 2:
+            return 0.0
+
+        # Integrate wetted perimeter along hull length using trapezoidal rule
+        # S_w = ∫ P_w(x) dx ≈ Σ [(P_w(i) + P_w(i+1)) / 2] * Δx
+        wetted_area = 0.0
+        for i in range(len(perimeters) - 1):
+            avg_perimeter = (perimeters[i] + perimeters[i + 1]) / 2.0
+            dx = stations[i + 1] - stations[i]
+            wetted_area += avg_perimeter * dx
+
+        return wetted_area
+
+    def waterline_length(self, waterline: float = None, step: float = 0.05) -> float:
+        """Calculate the waterline length (LWL) of the hull.
+
+        The waterline length is the longitudinal distance from the forward-most to the
+        aft-most point where the hull intersects the waterline. This is typically less
+        than the overall length (LOA).
+
+        Args:
+            waterline: The z-coordinate of the waterline. If None, uses self.waterline.
+            step: The longitudinal step size for sampling in meters. Default 0.05 m.
+
+        Returns:
+            float: Waterline length in meters (m)
+
+        Raises:
+            ValueError: If waterline is not set or invalid
+
+        Example:
+            >>> hull.waterline_length()
+            4.850  # m
+        """
+        if waterline is None:
+            waterline = self.waterline
+        if waterline is None or waterline <= 0:
+            raise ValueError(
+                f"Invalid waterline: {waterline}. "
+                "Ensure waterline is calculated before calling waterline_length()."
+            )
+
+        x = self.min_x
+        forward_x = None  # Forward-most station with waterline intersection
+        aft_x = None  # Aft-most station with waterline intersection
+
+        # Find forward-most and aft-most stations where hull intersects waterline
+        while x <= self.max_x:
+            points = []
+            for curve in self.curves:
+                try:
+                    point = curve.eval_x(x)
+                    points.append(point)
+                except ValueError:
+                    continue
+
+            if len(points) >= 3:
+                # Check if any points are below waterline (hull intersects waterline here)
+                has_submerged = any(p.z <= waterline for p in points)
+                has_emerged = any(p.z > waterline for p in points)
+
+                # Hull intersects waterline if it has both submerged and emerged points
+                if has_submerged and has_emerged:
+                    if aft_x is None:
+                        aft_x = x  # First intersection (aft)
+                    forward_x = x  # Keep updating (last intersection will be forward)
+
+            x += step
+
+        if aft_x is None or forward_x is None:
+            return 0.0
+
+        return forward_x - aft_x
+
+    def waterline_beam(self, waterline: float = None, step: float = 0.05) -> float:
+        """Calculate the maximum beam (width) of the hull at the waterline.
+
+        The waterline beam (BWL) is the maximum transverse width of the hull measured
+        at the waterline, from port to starboard.
+
+        Args:
+            waterline: The z-coordinate of the waterline. If None, uses self.waterline.
+            step: The longitudinal step size for sampling in meters. Default 0.05 m.
+
+        Returns:
+            float: Waterline beam in meters (m)
+
+        Raises:
+            ValueError: If waterline is not set or invalid
+
+        Example:
+            >>> hull.waterline_beam()
+            0.545  # m
+        """
+        if waterline is None:
+            waterline = self.waterline
+        if waterline is None or waterline <= 0:
+            raise ValueError(
+                f"Invalid waterline: {waterline}. "
+                "Ensure waterline is calculated before calling waterline_beam()."
+            )
+
+        x = self.min_x
+        max_beam = 0.0
+
+        # Find maximum beam at waterline across all stations
+        while x <= self.max_x:
+            points = []
+            for curve in self.curves:
+                try:
+                    point = curve.eval_x(x)
+                    points.append(point)
+                except ValueError:
+                    continue
+
+            if len(points) >= 3:
+                # Find points at or near the waterline
+                # We look for points within a small tolerance of the waterline,
+                # or interpolate between points above and below
+                waterline_y_coords = []
+
+                n = len(points)
+                for i in range(n):
+                    p1 = points[i]
+                    p2 = points[(i + 1) % n]
+
+                    # If point is at waterline, add it
+                    if abs(p1.z - waterline) < 1e-6:
+                        waterline_y_coords.append(abs(p1.y))
+
+                    # If edge crosses waterline, interpolate
+                    if (p1.z < waterline < p2.z) or (p2.z < waterline < p1.z):
+                        t = (waterline - p1.z) / (p2.z - p1.z)
+                        intersect_y = p1.y + t * (p2.y - p1.y)
+                        waterline_y_coords.append(abs(intersect_y))
+
+                # Calculate beam at this station
+                if len(waterline_y_coords) >= 2:
+                    station_beam = max(waterline_y_coords) * 2  # Port to starboard
+                    max_beam = max(max_beam, station_beam)
+
+            x += step
+
+        return max_beam
+
     def initialize_from_data(self, data: dict):
         self.name = data.get("name", "KAYAK HULL")
         self.description = data.get("description", "KAYAK HULL")
