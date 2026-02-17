@@ -42,7 +42,7 @@
       ]
     },
     {
-      "name": "starborad gunnel",
+      "name": "starboard gunnel",
       "mirrored": false,
       "points": [
         [
@@ -78,7 +78,7 @@
       ]
     },
     {
-      "name": "Mirror of starborad gunnel",
+      "name": "Mirror of starboard gunnel",
       "mirrored": true,
       "points": [
         [
@@ -114,7 +114,7 @@
       ]
     },
     {
-      "name": "starborad chime",
+      "name": "starboard chime",
       "mirrored": false,
       "points": [
         [
@@ -150,7 +150,7 @@
       ]
     },
     {
-      "name": "Mirror of starborad chime",
+      "name": "Mirror of starboard chime",
       "mirrored": true,
       "points": [
         [

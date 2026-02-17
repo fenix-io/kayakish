@@ -58,6 +58,32 @@ The upward force exerted by water on the submerged portion of the kayak, equal t
 ### Buoyant Force
 See **Buoyancy**
 
+### Block Coefficient ($C_b$)
+A dimensionless ratio describing the fullness of the hull relative to its bounding rectangular box below the waterline.
+
+**Formula:** $C_b = \frac{\nabla}{L_{WL} \times B_{WL} \times T}$
+
+**Inputs:**
+- $\nabla$ — Displaced volume (m³)
+- $L_{WL}$ — Waterline length (m)
+- $B_{WL}$ — Waterline beam (m)
+- $T$ — Draft (m)
+
+**Output:** Dimensionless (0 to 1)
+
+**Interpretation:** If you drew a rectangular box $L_{WL} \times B_{WL} \times T$ around the underwater hull, $C_b$ is the fraction of that box the hull fills. A value of 1.0 would be a rectangular barge; a kayak typically has $C_b \approx 0.25\text{–}0.40$.
+
+**Typical values:**
+- Kayak: 0.25–0.40
+- Sailboat: 0.35–0.45
+- Cargo ship: 0.80–0.85
+
+**Usage downstream:** Input to wave resistance estimation methods (e.g., Holtrop-Mennen). Lower $C_b$ generally means lower wave resistance at the same displacement. Related to the other form coefficients by $C_b = C_p \times C_m$.
+
+**Context:** Resistance Analysis, Hull Form
+**Related Terms:** Prismatic Coefficient, Midship Coefficient, Displacement, Waterline Length
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+
 ---
 
 ## C
@@ -178,6 +204,28 @@ The total energy required to capsize a vessel, represented by the area under the
 
 ## E
 
+### Effective Power ($P_{eff}$)
+The power required to overcome the total hull resistance at a given speed. This is the power "absorbed" by the water — the paddler must produce more due to paddle inefficiency.
+
+**Formula:** $P_{eff} = R_{total} \times V$
+
+**Inputs:**
+- $R_{total}$ — Total hull resistance (N)
+- $V$ — Boat speed (m/s)
+
+**Units:** Watts (W). Derivation: $\text{N} \times \text{m/s} = \text{W}$
+
+**Typical values for kayaks:**
+- 5 km/h cruising: ~15–25 W
+- 7 km/h brisk pace: ~30–50 W
+- 10 km/h (hull speed for 5m kayak): ~150–200 W
+
+**Usage downstream:** Divided by paddle efficiency $\eta_p$ to get paddler power.
+
+**Context:** Resistance Analysis, Performance
+**Related Terms:** Power, Paddler Power, Total Resistance, Paddle Efficiency
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+
 ### Equilibrium
 The state where the kayak floats with buoyant force exactly balancing the weight, and all moments are balanced (no net rotation).
 
@@ -201,6 +249,57 @@ The state of floating on water, achieved when buoyant force equals weight.
 
 **Context:** Hydrostatics  
 **Related Terms:** Buoyancy, Equilibrium, Waterline
+
+### Frictional Resistance ($R_f$)
+The drag force caused by the viscous interaction between the hull surface and the water flowing past it. For kayaks at typical paddling speeds, frictional resistance is the dominant component (70–90% of total).
+
+**Formula:** $R_f = \frac{1}{2} \rho V^2 S_w C_f$
+
+**Inputs:**
+- $\rho$ — Water density (kg/m³): 1000 (fresh), 1025 (salt)
+- $V$ — Boat speed (m/s)
+- $S_w$ — Wetted surface area (m²)
+- $C_f$ — Friction coefficient from ITTC 1957 (dimensionless)
+
+**Units:** Newtons (N). Derivation: $\frac{\text{kg}}{\text{m}^3} \times \frac{\text{m}^2}{\text{s}^2} \times \text{m}^2 \times 1 = \frac{\text{kg} \cdot \text{m}}{\text{s}^2} = \text{N}$
+
+**Example:** At 5.4 km/h (1.5 m/s), $S_w$ = 2.0 m², $C_f$ = 0.00326 → $R_f$ ≈ 7.3 N (~0.75 kg of force).
+
+**Surface roughness correction:** An additive allowance $\Delta C_f$ may be applied: polished gelcoat +0.0002, thermoformed plastic +0.0004, rotomolded polyethylene +0.0006.
+
+**Usage downstream:** Added to residuary resistance to form total resistance: $R_{total} = R_f + R_r$.
+
+**Context:** Resistance Analysis, Hydrodynamics
+**Related Terms:** ITTC 1957, Reynolds Number, Wetted Surface, Residuary Resistance, Total Resistance
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+
+### Froude Number ($F_n$)
+A dimensionless number describing the ratio of boat speed to the natural wave propagation speed for the hull. It is the primary parameter governing wave-making resistance.
+
+**Formula:** $F_n = \frac{V}{\sqrt{g \times L_{WL}}}$
+
+**Inputs:**
+- $V$ — Boat speed (m/s)
+- $g$ — Gravitational acceleration (9.81 m/s²)
+- $L_{WL}$ — Waterline length (m)
+
+**Output:** Dimensionless. Units cancel: $\frac{\text{m/s}}{\sqrt{\text{m/s}^2 \times \text{m}}} = 1$
+
+**Speed regimes:**
+| $F_n$ | Regime | Description |
+|---|---|---|
+| < 0.30 | Sub-hull speed | Wave resistance small (< 15% of total), friction dominates |
+| ≈ 0.35 | Efficient cruise | Wave resistance growing but manageable |
+| ≈ 0.40 | Hull speed | Wave resistance rises steeply — "the wall" |
+| > 0.50 | Beyond hull speed | Wave resistance dominates (> 60%), enormous power for small speed gain |
+
+**Example:** For a 5.0 m waterline kayak at 7.2 km/h (2.0 m/s): $F_n = 2.0 / \sqrt{9.81 \times 5.0} = 0.286$ — comfortable cruise regime.
+
+**Usage downstream:** Primary input to residuary resistance lookup: $C_r = f(F_n, C_p)$.
+
+**Context:** Resistance Analysis, Hydrodynamics
+**Related Terms:** Hull Speed, Residuary Resistance, Waterline Length, Prismatic Coefficient
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
 
 ### Freeboard
 The vertical distance from the waterline to the deck or gunwale. Represents the reserve buoyancy above water.
@@ -281,6 +380,24 @@ The JSON file format used by Kayakish to persist hull definitions on disk. Conta
 **Context:** Data Persistence, I/O  
 **Related Terms:** Hull, Curve, sanitize_filename
 
+### Hull Speed
+The speed at which the bow wave and stern wave created by the hull reinforce each other, causing a dramatic increase in wave-making resistance. Corresponds approximately to Froude number $F_n \approx 0.40$.
+
+**Formula:** $V_{hull} \approx 1.25 \times \sqrt{L_{WL}}$ (m/s), or equivalently $V_{hull} \approx 4.50 \times \sqrt{L_{WL}}$ (km/h)
+
+**Inputs:**
+- $L_{WL}$ — Waterline length (m)
+
+**Units:** m/s or km/h
+
+**Example:** For a 5.0 m waterline kayak: $V_{hull} \approx 1.25 \times \sqrt{5.0} \approx 2.8$ m/s ≈ 10 km/h.
+
+**Interpretation:** Below hull speed, resistance grows moderately; above it, resistance increases very steeply. Exceeding hull speed requires disproportionate effort — a paddler at 90% hull speed might need only half the power of one paddling at 110% hull speed.
+
+**Context:** Resistance Analysis, Performance
+**Related Terms:** Froude Number, Waterline Length, Residuary Resistance, Wave-Making Resistance
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+
 ---
 
 ## I
@@ -309,6 +426,24 @@ Mathematical techniques for estimating values between known data points. Used ex
 **Context:** Geometry, Mathematics  
 **Related Terms:** PCHIP, Cubic Interpolation, Spline, Smoothing
 
+### ITTC 1957 Friction Line
+The internationally agreed-upon formula for computing the frictional resistance coefficient of a smooth flat plate at a given Reynolds number. Adopted by the International Towing Tank Conference in 1957 as the standard model–ship correlation line.
+
+**Formula:** $C_f = \frac{0.075}{(\log_{10} Re - 2)^2}$
+
+**Inputs:**
+- $Re$ — Reynolds number (dimensionless)
+
+**Output:** $C_f$ — Frictional resistance coefficient (dimensionless), typically ~0.002–0.004 for kayaks.
+
+**Example:** At $Re$ = 6,300,000: $\log_{10}(6{,}300{,}000) = 6.799$ → $C_f = 0.075 / (6.799 - 2)^2 = 0.00326$.
+
+**Usage downstream:** $C_f$ is multiplied by the dynamic pressure and wetted surface area to get frictional resistance: $R_f = \frac{1}{2} \rho V^2 S_w C_f$.
+
+**Context:** Resistance Analysis, Hydrodynamics
+**Related Terms:** Frictional Resistance, Reynolds Number, Wetted Surface
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+
 ---
 
 ## K
@@ -325,6 +460,28 @@ A small, narrow watercraft propelled by a double-bladed paddle, typically with a
 **Types:** Recreational, touring, sea kayak, whitewater  
 **Context:** Vessel Type  
 **Related Terms:** Hull, Canoe, Small Craft
+
+### Kinematic Viscosity ($\nu$)
+A physical property of water describing its resistance to flow under gravity. Depends on water temperature.
+
+**Symbol:** $\nu$ (nu)
+
+**Typical values:**
+| Temperature | $\nu$ (m²/s) |
+|---|---|
+| 5°C | $1.52 \times 10^{-6}$ |
+| 10°C | $1.31 \times 10^{-6}$ |
+| 15°C | $1.19 \times 10^{-6}$ |
+| 20°C | $1.00 \times 10^{-6}$ |
+| 25°C | $0.89 \times 10^{-6}$ |
+
+**Units:** m²/s
+
+**Usage downstream:** Used to compute Reynolds number: $Re = V \times L_{WL} / \nu$. Lower viscosity (warmer water) → higher Reynolds number → slightly lower friction coefficient.
+
+**Context:** Resistance Analysis, Fluid Properties
+**Related Terms:** Reynolds Number, Water Density, ITTC 1957
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
 
 ---
 
@@ -395,6 +552,34 @@ The theoretical point where the line of action of buoyancy intersects the center
 ### Metacentric Height
 See **GM**
 
+### Midship Coefficient ($C_m$)
+A dimensionless ratio describing the fullness of the largest submerged cross-section relative to its bounding rectangle.
+
+**Formula:** $C_m = \frac{A_{max}}{B_{WL} \times T}$
+
+**Inputs:**
+- $A_{max}$ — Largest submerged cross-section area (m²), typically at the widest station
+- $B_{WL}$ — Waterline beam at the widest station (m)
+- $T$ — Draft (m)
+
+**Output:** Dimensionless (0 to 1)
+
+**Interpretation:** Describes the shape of the midship section. Imagine a rectangle $B_{WL} \times T$ around the widest cross-section below the waterline; $C_m$ is the fraction of that rectangle the cross-section fills.
+
+**Typical values:**
+- Rectangular/flat-bottom hull: $C_m \approx 0.95\text{–}1.0$
+- Round-bottom kayak: $C_m \approx 0.60\text{–}0.80$
+- V-shaped hull: $C_m \approx 0.50\text{–}0.65$
+
+**Usage downstream:**
+- Used to calculate prismatic coefficient: $C_p = C_b / C_m$
+- Direct input to Holtrop-Mennen wave resistance regression
+- A blunter midship section (higher $C_m$) affects wave generation patterns
+
+**Context:** Resistance Analysis, Hull Form
+**Related Terms:** Block Coefficient, Prismatic Coefficient, Cross-Section, Profile
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+
 ### Moment
 The rotational effect of a force, equal to force times perpendicular distance. In stability analysis, the righting moment opposes heeling.
 
@@ -437,11 +622,50 @@ The reference point (0, 0, 0) in the coordinate system. Placed on the centerline
 
 ## P
 
+### Paddle Efficiency ($\eta_p$)
+The fraction of the paddler's mechanical power output that actually propels the kayak forward. Accounts for losses in the paddle stroke (blade slip, entry/exit splash, recovery phase, body mechanics).
+
+**Symbol:** $\eta_p$ (eta)
+
+**Typical values:**
+- Recreational paddler: 0.50–0.55 (50–55%)
+- Experienced touring paddler: 0.55–0.65
+- Elite racing paddler: 0.65–0.70
+
+**Units:** Dimensionless (0 to 1)
+
+**Usage downstream:** Converts effective power to paddler power: $P_{paddler} = P_{eff} / \eta_p$. A paddler with 60% efficiency must produce 1.67× the effective power.
+
+**Context:** Resistance Analysis, Performance
+**Related Terms:** Power, Effective Power, Paddler Power
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+
 ### Paddler
 The person operating the kayak. The paddler's weight and position significantly affect the center of gravity and thus stability.
 
 **Context:** Loading, Mass Distribution  
 **Related Terms:** CG, Mass, Seating Position, Target Payload
+
+### Paddler Power ($P_{paddler}$)
+The total mechanical power a paddler must produce at the paddle shaft to maintain a given speed, accounting for paddle inefficiency.
+
+**Formula:** $P_{paddler} = \frac{P_{eff}}{\eta_p} = \frac{R_{total} \times V}{\eta_p}$
+
+**Inputs:**
+- $P_{eff}$ — Effective power (W)
+- $\eta_p$ — Paddle efficiency (dimensionless, typically 0.5–0.7)
+
+**Units:** Watts (W)
+
+**Typical values:**
+- Comfortable sustained effort (recreational): 30–60 W
+- Brisk touring pace: 60–100 W
+- Trained endurance paddler: 100–150 W sustained
+- Sprint effort: 300+ W (short duration)
+
+**Context:** Resistance Analysis, Performance
+**Related Terms:** Effective Power, Paddle Efficiency, Total Resistance
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
 
 ### PCHIP (Piecewise Cubic Hermite Interpolating Polynomial)
 A shape-preserving interpolation method that avoids overshoots between data points. Used as the primary interpolation method for hull curves when x-coordinates are monotonically increasing. Unlike standard cubic splines, PCHIP preserves monotonicity of the data.
@@ -462,6 +686,39 @@ The left side of the kayak when facing forward (toward the bow). In the coordina
 
 **Context:** Orientation  
 **Related Terms:** Starboard, Left, Transverse
+
+### Prismatic Coefficient ($C_p$)
+A dimensionless ratio describing how the displaced volume is distributed along the hull's length. The most important hull form coefficient for resistance prediction.
+
+**Formula:** $C_p = \frac{\nabla}{A_{max} \times L_{WL}}$
+
+Or equivalently: $C_p = \frac{C_b}{C_m}$
+
+**Inputs:**
+- $\nabla$ — Displaced volume (m³)
+- $A_{max}$ — Largest submerged cross-section area (m²)
+- $L_{WL}$ — Waterline length (m)
+
+**Output:** Dimensionless (0 to 1)
+
+**Interpretation:** Imagine extruding the largest cross-section along the entire waterline length to form a prism. $C_p$ is the fraction of that prism the hull actually occupies. A low $C_p$ means volume is concentrated amidships with fine bow and stern; a high $C_p$ means volume is spread more evenly.
+
+**Typical values:**
+- Cruising kayak: $C_p \approx 0.50\text{–}0.55$ (fine ends, low-speed efficiency)
+- Racing kayak: $C_p \approx 0.55\text{–}0.60$ (optimized for higher Froude numbers)
+- Cargo ship: $C_p \approx 0.60\text{–}0.80$
+
+**Design trade-off:**
+- Low $C_p$ (0.50–0.55): Lower wave resistance at low speeds ($F_n < 0.35$)
+- High $C_p$ (0.60–0.70): Better at higher speeds ($F_n > 0.40$) due to more favorable wave system
+
+**Usage downstream:** The **primary input** to residuary resistance estimation. Empirical methods use $C_r = f(F_n, C_p)$ — residuary coefficient as a function of Froude number and prismatic coefficient.
+
+**Relationship between coefficients:** $C_b = C_p \times C_m$. Only two of the three need to be computed independently; the third follows.
+
+**Context:** Resistance Analysis, Hull Form
+**Related Terms:** Block Coefficient, Midship Coefficient, Froude Number, Residuary Resistance
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
 
 ### Profile
 A cross-sectional shape of the hull at a particular longitudinal station. In Kayakish, profiles are **auto-generated** by evaluating all spline curves at a given x-coordinate during the build process. Users define curves (not profiles directly), and the system creates profiles at regular 0.05 m intervals.
@@ -486,12 +743,72 @@ The range of heel angles over which the GZ curve has positive values (positive r
 **Context:** Stability Analysis  
 **Related Terms:** GZ Curve, Vanishing Stability, Stability Range
 
+### Residuary Resistance ($R_r$)
+The component of hull resistance caused by wave generation and pressure effects — everything that is not frictional drag. Dominated by wave-making resistance for displacement hulls.
+
+**Formula:** $R_r = \frac{1}{2} \rho V^2 S_w C_r$
+
+(Same structure as frictional resistance, but with coefficient $C_r$ instead of $C_f$.)
+
+**Inputs:**
+- $\rho$ — Water density (kg/m³)
+- $V$ — Boat speed (m/s)
+- $S_w$ — Wetted surface area (m²)
+- $C_r$ — Residuary resistance coefficient (dimensionless), obtained from empirical data
+
+**Units:** Newtons (N)
+
+**Obtaining $C_r$:** Unlike $C_f$, there is no clean analytical formula. $C_r$ comes from empirical data (towing tank experiments on model hulls) as a function of:
+1. **Froude number** ($F_n$) — the dominant factor
+2. **Prismatic coefficient** ($C_p$) — how volume is distributed
+
+Approach options:
+- **Empirical $C_r$ vs $F_n$ lookup table** for slender displacement hulls (planned initial approach)
+- **Holtrop-Mennen regression** using multiple form coefficients (more accurate, future enhancement)
+
+**Key behavior:** $C_r$ grows explosively with Froude number:
+- At $F_n = 0.20$: $C_r$ ≈ 10% of $C_f$ (wave drag negligible)
+- At $F_n = 0.40$: $C_r$ ≈ 150% of $C_f$ (wave drag dominates)
+- At $F_n = 0.50$: $C_r$ ≈ 500% of $C_f$
+
+**Usage downstream:** Added to frictional resistance to form total resistance: $R_{total} = R_f + R_r$.
+
+**Context:** Resistance Analysis, Hydrodynamics
+**Related Terms:** Frictional Resistance, Total Resistance, Froude Number, Prismatic Coefficient, Wave-Making Resistance
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+
 ### Reserve Buoyancy
 The volume of the hull above the waterline that can provide additional buoyancy if the kayak is pushed lower in the water.
 
 **Units:** cubic meters (m³)  
 **Context:** Safety, Flotation  
 **Related Terms:** Freeboard, Volume, Buoyancy
+
+### Reynolds Number ($Re$)
+A dimensionless number describing the ratio of inertial forces to viscous forces in the water flowing around the hull. It determines whether the flow is laminar or turbulent, and is the sole input to the ITTC 1957 friction formula.
+
+**Formula:** $Re = \frac{V \times L_{WL}}{\nu}$
+
+**Inputs:**
+- $V$ — Boat speed (m/s)
+- $L_{WL}$ — Waterline length (m)
+- $\nu$ — Kinematic viscosity of water (m²/s), ≈ $1.19 \times 10^{-6}$ at 15°C
+
+**Output:** Dimensionless. Units cancel: $\frac{(\text{m/s}) \times \text{m}}{\text{m}^2/\text{s}} = 1$
+
+**Flow regimes:**
+- $Re$ < ~500,000: Laminar flow (smooth layers, low friction)
+- $Re$ > ~500,000: Turbulent flow (chaotic near surface, higher friction)
+
+For kayaks, $Re$ is always in the **turbulent** regime (typically 2–10 million).
+
+**Example:** At 1.5 m/s with $L_{WL}$ = 5.0 m: $Re = (1.5 \times 5.0) / 1.19 \times 10^{-6} = 6{,}302{,}521$ — fully turbulent.
+
+**Usage downstream:** Sole input to ITTC 1957 to compute $C_f$: $C_f = 0.075 / (\log_{10} Re - 2)^2$.
+
+**Context:** Resistance Analysis, Hydrodynamics
+**Related Terms:** ITTC 1957, Frictional Resistance, Kinematic Viscosity, Waterline Length
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
 
 ### Righting Arm
 See **GZ**
@@ -615,6 +932,22 @@ The volume of the hull below the waterline, which displaces water and creates bu
 **Context:** Hydrostatics  
 **Related Terms:** Displacement, Waterline, Volume
 
+### Surface Roughness Allowance ($\Delta C_f$)
+An additive correction to the ITTC friction coefficient to account for real hull surface roughness (the ITTC formula assumes a perfectly smooth surface).
+
+**Formula:** $C_f' = C_f + \Delta C_f$
+
+**Typical values:**
+| Hull material | $\Delta C_f$ |
+|---|---|
+| Polished gelcoat/composite | 0.0002 |
+| Thermoformed plastic | 0.0004 |
+| Rotomolded polyethylene | 0.0006 |
+
+**Context:** Resistance Analysis, Hydrodynamics
+**Related Terms:** ITTC 1957, Frictional Resistance
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+
 ### Symmetry
 Most kayak hulls are symmetric about the centerline (port and starboard sides are mirror images). Symmetry simplifies calculations and data definition.
 
@@ -670,6 +1003,36 @@ Describes a kayak with low initial stability (small GM) that feels "tippy" or ea
 
 **Context:** Stability Feel  
 **Related Terms:** Stiffness, GM, Initial Stability
+
+### Total Resistance ($R_{total}$)
+The sum of all resistance forces acting on the hull, which the paddler must overcome to maintain a given speed.
+
+**Formula:** $R_{total} = R_f + R_r = \frac{1}{2} \rho V^2 S_w (C_f + C_r)$
+
+**Inputs:**
+- $R_f$ — Frictional resistance (N)
+- $R_r$ — Residuary (wave-making) resistance (N)
+
+Or equivalently:
+- $\rho$ — Water density (kg/m³)
+- $V$ — Boat speed (m/s)
+- $S_w$ — Wetted surface area (m²)
+- $C_f$ — Friction coefficient (dimensionless)
+- $C_r$ — Residuary coefficient (dimensionless)
+
+**Units:** Newtons (N)
+
+**Typical values for a touring kayak:**
+- 5 km/h: ~10–15 N (light effort)
+- 7 km/h: ~20–30 N (moderate effort)
+- 10 km/h (hull speed): ~50–80 N (hard effort)
+- 12 km/h: ~120–200 N (sprint)
+
+**Usage downstream:** Multiplied by speed to get effective power: $P_{eff} = R_{total} \times V$.
+
+**Context:** Resistance Analysis, Performance
+**Related Terms:** Frictional Resistance, Residuary Resistance, Effective Power, Paddler Power
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
 
 ### Tracking
 The tendency of a kayak to maintain a straight course. Longer kayaks and those with less rocker typically track better.
@@ -797,19 +1160,45 @@ The horizontal plane at the water surface level. The waterplane area affects ini
 **Related Terms:** Waterline, Surface, Area
 
 ### Weight
-The force due to gravity acting on the kayak's mass (hull + paddler + gear). Equals mass times gravitational acceleration.
+The gravitational force acting on the kayak system (hull + paddler + gear). In this application, weight is expressed in **kilogram-force (kgf)** — the unit universally used in practice. 1 kgf is the force exerted by gravity on 1 kg of mass.
 
-**Units:** Newtons (N) or expressed as mass in kilograms (kg)  
-**Formula:** Weight = Mass × g (where g ≈ 9.81 m/s²)  
+**Units:** kgf (kilogram-force). All `target_weight`, `target_payload`, and `displacement` values in the code use kgf.  
+**Equivalence:** 1 kgf = 9.81 N  
 **Context:** Forces, Equilibrium  
-**Related Terms:** Mass, Gravity, Load
+**Related Terms:** Mass, Gravity, Load, Displacement
 
-### Wetted Surface
-The area of the hull surface in contact with water. Affects drag and resistance.
+### Waterplane Coefficient ($C_{wp}$)
+A dimensionless ratio describing the fullness of the waterplane area (the hull's footprint on the water surface) relative to its bounding rectangle.
+
+**Formula:** $C_{wp} = \frac{A_{wp}}{L_{WL} \times B_{WL}}$
+
+**Inputs:**
+- $A_{wp}$ — Waterplane area (m²) — the area enclosed by the waterline when viewed from above
+- $L_{WL}$ — Waterline length (m)
+- $B_{WL}$ — Waterline beam (m)
+
+**Output:** Dimensionless (0 to 1)
+
+**Typical values:**
+- Kayak: $C_{wp} \approx 0.65\text{–}0.80$
+- Ship: $C_{wp} \approx 0.70\text{–}0.90$
+
+**Context:** Resistance Analysis, Hull Form
+**Related Terms:** Block Coefficient, Prismatic Coefficient, Waterplane
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
+
+### Wetted Surface ($S_w$)
+The total area of the hull surface in contact with water below the waterline. The primary geometric input for frictional resistance calculation.
+
+**Calculation method:** For each cross-section at station $x$, compute the wetted perimeter (arc length of the submerged profile), then integrate along the hull length:
+$$S_w = \int_0^{L} P_w(x) \, dx \approx \sum_{i} \frac{P_w(x_i) + P_w(x_{i+1})}{2} \Delta x$$
+
+**Typical values for kayaks:** 1.5–3.0 m²
 
 **Units:** square meters (m²)  
-**Context:** Hydrodynamics, Performance  
-**Related Terms:** Surface Area, Drag, Hull
+**Context:** Hydrodynamics, Resistance Analysis  
+**Related Terms:** Frictional Resistance, Wetted Perimeter, Hull, ITTC 1957
+**Note:** *Not currently computed by the application — planned for resistance analysis feature.*
 
 ### Width
 See **Beam**
@@ -847,15 +1236,31 @@ The vertical axis running from bottom (negative z) to top (positive z). Typicall
 |-------------|---------|-------|
 | CB | Center of Buoyancy | m |
 | CG | Center of Gravity | m |
+| $C_b$ | Block Coefficient | dimensionless |
+| $C_f$ | Frictional Resistance Coefficient | dimensionless |
+| $C_m$ | Midship Coefficient | dimensionless |
+| $C_p$ | Prismatic Coefficient | dimensionless |
+| $C_r$ | Residuary Resistance Coefficient | dimensionless |
+| $C_{wp}$ | Waterplane Coefficient | dimensionless |
+| $F_n$ | Froude Number | dimensionless |
 | GM | Metacentric Height | m |
 | GZ | Righting Arm | m |
 | LCB | Longitudinal Center of Buoyancy | m |
 | LCG | Longitudinal Center of Gravity | m |
 | LOA | Length Overall | m |
+| $P_{eff}$ | Effective Power | W |
+| $P_{paddler}$ | Paddler Power | W |
+| $Re$ | Reynolds Number | dimensionless |
+| $R_f$ | Frictional Resistance | N |
+| $R_r$ | Residuary Resistance | N |
+| $R_{total}$ | Total Resistance | N |
+| $S_w$ | Wetted Surface Area | m² |
 | TCB | Transverse Center of Buoyancy | m |
 | TCG | Transverse Center of Gravity | m |
 | VCB | Vertical Center of Buoyancy | m |
 | VCG | Vertical Center of Gravity | m |
+| $\eta_p$ | Paddle Efficiency | dimensionless |
+| $\nu$ (nu) | Kinematic Viscosity | m²/s |
 | φ (phi) | Heel angle | degrees (°) |
 | θ (theta) | Trim angle | degrees (°) |
 | ρ (rho) | Water density | kg/m³ |
@@ -883,6 +1288,10 @@ The vertical axis running from bottom (negative z) to top (positive z). Typicall
 
 ### Force
 - **N** - Newtons (kg·m/s²)
+
+### Power
+- **W** - Watts (J/s = N·m/s)
+- **kW** - kilowatts (1000 W)
 
 ### Angle
 - **°** - degrees
@@ -933,6 +1342,8 @@ The vertical axis running from bottom (negative z) to top (positive z). Typicall
 - **PCHIP Interpolation**: For shape-preserving curve fitting
 - **Archimedes' Principle**: Foundation for buoyancy calculations
 - **Brent's Method (brentq)**: For root-finding in curve evaluation
+- **ITTC 1957 Friction Line**: For frictional resistance coefficient calculation
+- **Froude Number Scaling**: For wave-making resistance regime classification
 
 ---
 
@@ -957,6 +1368,7 @@ The vertical axis running from bottom (negative z) to top (positive z). Typicall
 **Version History:**
 - v1.0 (2025-12-26): Initial comprehensive glossary
 - v1.1 (2026-02-14): Cross-referenced with codebase; fixed coordinate system, integration methods, interpolation types, and profile definition
+- v1.2 (2026-02-17): Added resistance analysis terms — hull form coefficients ($C_b$, $C_m$, $C_p$, $C_{wp}$), Reynolds number, Froude number, ITTC 1957, frictional resistance, residuary resistance, total resistance, hull speed, effective power, paddler power, paddle efficiency, kinematic viscosity, surface roughness allowance
 
 **Maintenance:**
 - Update glossary when new terms are introduced

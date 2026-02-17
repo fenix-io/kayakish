@@ -20,10 +20,10 @@ But these other sources are **WRONG** (they say y+ = port):
 - `test/scripts/visualize_profile.py` axis label
 
 ### Proposed Fix
-- [ ] Fix `.github/copilot-instructions.md`: change y-axis description to "positive from centerline to starboard"
-- [ ] Fix `docs/Architecture.md`: update coordinate system section
-- [ ] Fix `test/scripts/visualize_profile.py`: swap port/starboard axis label
-- [ ] No change needed in Glossary (it's correct)
+- [x] Fix `.github/copilot-instructions.md`: change y-axis description to "positive from centerline to starboard"
+- [x] Fix `docs/Architecture.md`: update coordinate system section
+- [x] Fix `test/scripts/visualize_profile.py`: swap port/starboard axis label
+- [x] No change needed in Glossary (it's correct)
 
 ---
 
@@ -36,11 +36,11 @@ The Glossary prominently references **Simpson's Rule** and **Trapezoidal Rule** 
 Neither Simpson's Rule nor Trapezoidal Rule appears anywhere in the codebase.
 
 ### Proposed Fix
-- [ ] Add **Shoelace Formula** glossary entry
-- [ ] Add **Slab Integration** glossary entry
-- [ ] Update **Integration** and **Numerical Integration** entries to reference actual methods used
-- [ ] Update **Simpson's Rule** to note it's a reference method, not currently implemented
-- [ ] Update **Related Standards** section accordingly
+- [x] Add **Shoelace Formula** glossary entry
+- [x] Add **Slab Integration** glossary entry
+- [x] Update **Integration** and **Numerical Integration** entries to reference actual methods used
+- [x] Update **Simpson's Rule** to note it's a reference method, not currently implemented
+- [x] Update **Related Standards** section accordingly
 
 ---
 
@@ -61,7 +61,7 @@ Neither Simpson's Rule nor Trapezoidal Rule appears anywhere in the codebase.
 | **sanitize_filename** | `filename.py` - utility function | Low |
 
 ### Proposed Fix
-- [ ] Add glossary entries for High and Medium priority terms
+- [x] Add glossary entries for High and Medium priority terms
 
 ---
 
@@ -88,11 +88,12 @@ Neither Simpson's Rule nor Trapezoidal Rule appears anywhere in the codebase.
 - Docstring mentions `level` parameter but `__slots__` only has `(x, y, z)` — attribute doesn't exist
 
 ### Proposed Fix
-- [ ] Update Profile definition to reflect curve-based generation
-- [ ] Clarify weight/mass convention in Weight entry
-- [ ] Fix Origin definition to match actual convention (stern-based)
-- [ ] Update Interpolation entry with actual methods
-- [ ] Fix Point3D docstring (remove `level` reference) — code fix, not glossary
+- [x] Update Profile definition to reflect curve-based generation
+- [x] Clarify weight/mass convention in Weight entry
+- [x] Fix Origin definition to match actual convention (stern-based)
+- [x] Update Interpolation entry with actual methods
+- [x] Fix Point3D docstring (remove `level` reference) — code fix, not glossary
+- [x] Clarify weight uses kgf (kilogram-force), not Newtons — **DONE**
 
 ---
 
@@ -108,8 +109,8 @@ These terms have glossary entries but no corresponding code implementation. They
 - Rocker, Tracking, Waterline Length
 
 ### Proposed Fix
-- [ ] Mark aspirational/unimplemented terms with a note like "*Not currently computed by the application*"
-- [ ] Keep terms that are useful general reference (GM, Metacenter, etc.)
+- [x] Mark aspirational/unimplemented terms with a note like "*Not currently computed by the application*"
+- [x] Keep terms that are useful general reference (GM, Metacenter, etc.)
 
 ---
 
@@ -119,8 +120,8 @@ The glossary footer says:
 > "see the USER_GUIDE.md and example scripts"
 
 ### Proposed Fix
-- [ ] Change to: "see the [User Guide](User_Guide.md) and [example scripts](../test/scripts/)"
-- [ ] Change "Kayak Calculation Tool" to "Kayakish"
+- [x] Change to: "see the [User Guide](User_Guide.md) and [example scripts](../test/scripts/)"
+- [x] Change "Kayak Calculation Tool" to "Kayakish"
 
 ---
 
@@ -137,5 +138,33 @@ The glossary footer says:
 1. ~~Fix Glossary content (integration methods, missing terms, definitions, references)~~ **DONE**
 2. ~~Fix y-axis convention in copilot-instructions.md + Architecture.md~~ **DONE**
 3. ~~Fix Point3D stale docstring~~ **DONE**
-4. Fix k05.hull typo ("starborad" → "starboard") — **PENDING** (not requested)
-5. Fix Weight/Mass convention (D.2) — **PENDING** (not requested)
+4. ~~Fix k05.hull typo ("starborad" → "starboard")~~ **DONE**
+5. ~~Fix Weight/Mass convention (D.2) — clarified as kgf~~ **DONE**
+
+---
+
+# Resistance & Performance Analysis
+
+> Planning document: [docs/Resistance_analysis_planning.md](docs/Resistance_analysis_planning.md)
+
+## Phase 1: Geometry Extensions
+
+- [ ] **R1. Wetted Surface Area** — Add `wetted_perimeter()` to `Profile` and integrate along hull length in `Hull` to compute total wetted surface area $S_w$.
+- [ ] **R2. Waterline Length & Beam** — Add `waterline_length()` and `waterline_beam()` methods to `Hull`, finding the extent of the hull at the computed waterline.
+- [ ] **R3. Hull Form Coefficients** — Compute block coefficient ($C_b$), prismatic coefficient ($C_p$), midship coefficient ($C_m$), and waterplane coefficient ($C_{wp}$) from existing volume/area data. Add to a new `src/analysis/hull_parameters.py` module.
+
+## Phase 2: Resistance Calculations
+
+- [ ] **R4. Frictional Resistance (ITTC 1957)** — Implement `calculate_frictional_resistance(speed, Lw, Sw)` using the ITTC correlation line and Reynolds number in `src/analysis/resistance.py`.
+- [ ] **R5. Residuary (Wave-Making) Resistance** — Implement empirical $C_r$ vs Froude number model for slender displacement hulls in `src/analysis/resistance.py`.
+- [ ] **R6. Total Resistance & Power Curves** — Combine frictional + residuary resistance; compute effective power ($P = R \times V$), paddler power (with efficiency factor), and hull speed estimate.
+
+## Phase 3: API & Visualization
+
+- [ ] **R7. API Endpoint** — Add a `/hull/{name}/resistance` route that returns resistance, power, and performance data for a speed range.
+- [ ] **R8. Visualization** — Add resistance/power curve charts to the HTML visualization (similar to stability curve display).
+
+## Phase 4: Testing & Documentation
+
+- [ ] **R9. Unit Tests** — Write tests for wetted surface, form coefficients, ITTC friction, residuary resistance, and power calculations.
+- [ ] **R10. Documentation** — Update `docs/Architecture.md` and `docs/User_Guide.md` with the new resistance analysis feature.
