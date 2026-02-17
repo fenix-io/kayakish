@@ -292,10 +292,10 @@ class TestSpline3DApplyRotationOnXAxis:
 
         rotated_spline = spline.apply_rotation_on_x_axis(origin, 90)
 
-        # z=1 should rotate to y=1 (approximately)
+        # z=1 should rotate to y=-1 (90 degrees rotates z-axis to negative y-axis)
         for p in rotated_spline.points:
             assert p.z == pytest.approx(0.0, abs=1e-10)
-            assert p.y == pytest.approx(1.0, abs=1e-10)
+            assert p.y == pytest.approx(-1.0, abs=1e-10)
 
     def test_rotation_creates_new_spline(self):
         """Test that rotation creates a new spline object."""

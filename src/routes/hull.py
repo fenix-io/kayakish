@@ -1,12 +1,10 @@
 import os
-from pathlib import Path
-from typing import Union
-from typing import List, Dict, Optional, Tuple
+from typing import List
 
 from fastapi import APIRouter, HTTPException
 from src.analysis.stability import create_stability_curve_points
 from src.config import settings
-from src.geometry.hull import Hull
+from src.geometry.hull import Hull, WaterlineCalculationError
 from src.model.models import (
     CreateHullModel,
     CurveModel,
@@ -72,7 +70,10 @@ def create_hull(hull_model: CreateHullModel) -> HullModel:
         raise HTTPException(status_code=409, detail="A hull with this name already exists.")
     else:
         hull = Hull()
-        hull.build(hull_model.model_dump())
+        try:
+            hull.build(hull_model.model_dump())
+        except WaterlineCalculationError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         # print(f"Hull Name: {hull.name}")
         # print(f"Hull Description: {hull.description}")
         # print(f"Hull Target Waterline: {hull.target_waterline}")
@@ -148,7 +149,10 @@ def update_hull(hull_name: str, hull_model: CreateHullModel) -> HullModel:
 
     # prep_file_path = Path("data") / f"{safe_filename}_ready.json"
     hull = Hull()
-    hull.build(hull_model.model_dump())
+    try:
+        hull.build(hull_model.model_dump())
+    except WaterlineCalculationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     # print(f"Hull Name: {hull.name}")
     # print(f"Hull Description: {hull.description}")
     # print(f"Hull Target Waterline: {hull.target_waterline}")

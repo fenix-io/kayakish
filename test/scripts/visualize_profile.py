@@ -3,7 +3,6 @@ Visualize submerged profile at different heel angles.
 """
 
 import matplotlib.pyplot as plt
-import numpy as np
 from src.geometry.hull import Hull, read_file
 from src.geometry.profile import Profile
 

@@ -3,6 +3,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Coverage](https://img.shields.io/badge/coverage-81%25-brightgreen.svg)](#testing--coverage)
 
 Kayakish is a web-based tool for calculating hydrostatic parameters and stability characteristics of kayaks and small boats. Define your hull geometry through longitudinal curves, and the system will compute displacement, centers of gravity and buoyancy, equilibrium waterlines, and full stability curves (GZ curves) under varying loading conditions.
 
@@ -156,6 +157,7 @@ make help            # Show all available commands
 make install         # Create venv and install dependencies
 make dev             # Run development server (uvicorn --reload)
 make test            # Run pytest test suite
+make coverage        # Run tests with coverage report
 make lint            # Run flake8 linter
 make format          # Format code with black
 make clean           # Remove __pycache__ and temp files
@@ -242,9 +244,25 @@ kayakish/
 2. Create a feature branch (`git checkout -b feature/my-feature`)
 3. Make your changes
 4. Run linting and formatting: `make lint && make format`
-5. Run tests: `make test`
+5. Run tests: `make test` or check coverage with `make coverage`
 6. Commit and push
 7. Open a Pull Request
+
+### Testing & Coverage
+
+Run the test suite:
+```bash
+make test
+```
+
+Generate a coverage report:
+```bash
+make coverage
+```
+
+This will run all tests with coverage analysis and generate:
+- A terminal report showing coverage percentages and missing lines
+- An HTML report in `htmlcov/` directory (open `htmlcov/index.html` in your browser)
 
 ---
 

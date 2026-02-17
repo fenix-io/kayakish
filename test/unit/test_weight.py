@@ -1,6 +1,5 @@
 """Unit tests for the Weight class in geometry.weight module."""
 
-import pytest
 import json
 from src.geometry.weight import Weight
 

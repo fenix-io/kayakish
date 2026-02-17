@@ -1,6 +1,5 @@
 """Unit tests for the config module."""
 
-import pytest
 from pathlib import Path
 from src.config import Settings, settings
 
@@ -32,7 +31,7 @@ class TestSettingsDefaults:
     def test_default_debug(self):
         """Test that default debug is False."""
         s = Settings()
-        assert s.debug == False
+        assert s.debug is False
 
 
 class TestSettingsTypes:
@@ -132,7 +131,7 @@ class TestSettingsValidation:
     def test_can_create_settings_with_debug_true(self):
         """Test creating Settings with debug=True."""
         s = Settings(debug=True)
-        assert s.debug == True
+        assert s.debug is True
 
     def test_can_create_settings_with_custom_data_path(self):
         """Test creating Settings with custom data_path."""

@@ -1,6 +1,5 @@
 """Unit tests for the filename utilities in utils.filename module."""
 
-import pytest
 from src.utils.filename import sanitize_filename
 
 

@@ -1,7 +1,6 @@
 """Unit tests for the stability module in analysis.stability."""
 
 import pytest
-import numpy as np
 from src.analysis.stability import calculate_combined_cg, create_stability_curve_points, GRAVITY
 from src.geometry.hull import Hull
 from src.geometry.point import Point3D
@@ -26,9 +25,9 @@ class TestCalculateCombinedCg:
 
     def test_combined_cg_hull_heavier(self):
         """Test combined CG when hull is heavier."""
-        hull_weight = 75.0
+        hull_weight = 18.0
         hull_cg = Point3D(2.5, 0.0, 0.15)
-        payload_weight = 25.0
+        payload_weight = 7.0
         payload_cg_z = 0.35
 
         combined = calculate_combined_cg(hull_weight, hull_cg, payload_weight, payload_cg_z)
@@ -64,15 +63,15 @@ class TestCalculateCombinedCg:
 
     def test_combined_cg_lightweight_hull(self):
         """Test combined CG with very lightweight hull (realistic kayak)."""
-        hull_weight = 15.0
+        hull_weight = 5.0
         hull_cg = Point3D(2.5, 0.0, 0.12)
-        payload_weight = 85.0
+        payload_weight = 20.0
         payload_cg_z = 0.30
 
         combined = calculate_combined_cg(hull_weight, hull_cg, payload_weight, payload_cg_z)
 
-        total_weight = 100.0
-        expected_z = (15.0 * 0.12 + 85.0 * 0.30) / total_weight
+        total_weight = 25.0
+        expected_z = (5.0 * 0.12 + 20.0 * 0.30) / total_weight
         assert combined.z == pytest.approx(expected_z, abs=1e-6)
 
     def test_combined_cg_returns_point3d(self):
@@ -108,11 +107,11 @@ class TestCreateStabilityCurvePointsBasic:
         data = {
             "name": "Test",
             "target_waterline": 0.1,
-            "target_weight": 10.0,
-            "target_payload": 80.0,
+            "target_weight": 5.0,
+            "target_payload": 20.0,
             "curves": [
-                {"name": "keel", "points": [[0.0, 0.0, 0.0], [2.5, 0.0, 0.05], [5.0, 0.0, 0.0]]},
-                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [2.5, 0.3, 0.25], [5.0, 0.0, 0.3]]},
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "gunwale", "points": [[0.0, 0.2, 0.4], [1.0, 0.35, 0.3], [2.0, 0.2, 0.4]]},
             ],
         }
         hull = Hull()
@@ -128,11 +127,11 @@ class TestCreateStabilityCurvePointsBasic:
         data = {
             "name": "Test",
             "target_waterline": 0.1,
-            "target_weight": 10.0,
-            "target_payload": 80.0,
+            "target_weight": 5.0,
+            "target_payload": 20.0,
             "curves": [
-                {"name": "keel", "points": [[0.0, 0.0, 0.0], [2.5, 0.0, 0.05], [5.0, 0.0, 0.0]]},
-                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [2.5, 0.3, 0.25], [5.0, 0.0, 0.3]]},
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "gunwale", "points": [[0.0, 0.2, 0.4], [1.0, 0.35, 0.3], [2.0, 0.2, 0.4]]},
             ],
         }
         hull = Hull()
@@ -153,11 +152,11 @@ class TestCreateStabilityCurvePointsBasic:
         data = {
             "name": "Test",
             "target_waterline": 0.1,
-            "target_weight": 10.0,
-            "target_payload": 80.0,
+            "target_weight": 5.0,
+            "target_payload": 20.0,
             "curves": [
-                {"name": "keel", "points": [[0.0, 0.0, 0.0], [2.5, 0.0, 0.05], [5.0, 0.0, 0.0]]},
-                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [2.5, 0.3, 0.25], [5.0, 0.0, 0.3]]},
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "gunwale", "points": [[0.0, 0.2, 0.4], [1.0, 0.35, 0.3], [2.0, 0.2, 0.4]]},
             ],
         }
         hull = Hull()
@@ -186,11 +185,11 @@ class TestCreateStabilityCurvePointsBasic:
         data = {
             "name": "Test",
             "target_waterline": 0.1,
-            "target_weight": 10.0,
-            "target_payload": 80.0,
+            "target_weight": 5.0,
+            "target_payload": 20.0,
             "curves": [
-                {"name": "keel", "points": [[0.0, 0.0, 0.0], [2.5, 0.0, 0.05], [5.0, 0.0, 0.0]]},
-                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [2.5, 0.3, 0.25], [5.0, 0.0, 0.3]]},
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "gunwale", "points": [[0.0, 0.2, 0.4], [1.0, 0.35, 0.3], [2.0, 0.2, 0.4]]},
             ],
         }
         hull = Hull()
@@ -208,11 +207,11 @@ class TestCreateStabilityCurvePointsBasic:
         data = {
             "name": "Test",
             "target_waterline": 0.1,
-            "target_weight": 10.0,
-            "target_payload": 80.0,
+            "target_weight": 5.0,
+            "target_payload": 20.0,
             "curves": [
-                {"name": "keel", "points": [[0.0, 0.0, 0.0], [2.5, 0.0, 0.05], [5.0, 0.0, 0.0]]},
-                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [2.5, 0.3, 0.25], [5.0, 0.0, 0.3]]},
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "gunwale", "points": [[0.0, 0.2, 0.4], [1.0, 0.35, 0.3], [2.0, 0.2, 0.4]]},
             ],
         }
         hull = Hull()
@@ -237,11 +236,11 @@ class TestCreateStabilityCurvePointsPhysics:
         data = {
             "name": "Test",
             "target_waterline": 0.1,
-            "target_weight": 10.0,
-            "target_payload": 80.0,
+            "target_weight": 5.0,
+            "target_payload": 20.0,
             "curves": [
-                {"name": "keel", "points": [[0.0, 0.0, 0.0], [2.5, 0.0, 0.05], [5.0, 0.0, 0.0]]},
-                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [2.5, 0.3, 0.25], [5.0, 0.0, 0.3]]},
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "gunwale", "points": [[0.0, 0.2, 0.4], [1.0, 0.35, 0.3], [2.0, 0.2, 0.4]]},
             ],
         }
         hull = Hull()
@@ -260,22 +259,22 @@ class TestCreateStabilityCurvePointsPhysics:
         data = {
             "name": "Test",
             "target_waterline": 0.1,
-            "target_weight": 10.0,
-            "target_payload": 80.0,
+            "target_weight": 5.0,
+            "target_payload": 20.0,
             "curves": [
-                {"name": "keel", "points": [[0.0, 0.0, 0.0], [2.5, 0.0, 0.05], [5.0, 0.0, 0.0]]},
-                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [2.5, 0.3, 0.25], [5.0, 0.0, 0.3]]},
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "gunwale", "points": [[0.0, 0.2, 0.4], [1.0, 0.35, 0.3], [2.0, 0.2, 0.4]]},
             ],
         }
         hull = Hull()
         hull.build(data)
 
         _, _, _, stability_points = create_stability_curve_points(
-            hull, paddler_cg_z=0.25, paddler_weight=80, hull_weight=10, max_angle=30, step=15
+            hull, paddler_cg_z=0.25, paddler_weight=20, hull_weight=5, max_angle=30, step=15
         )
 
         # Check moment = weight * g * GZ for each point
-        total_weight = 90.0
+        total_weight = 25.0
         for point in stability_points:
             expected_moment = total_weight * GRAVITY * point["gz"]
             assert point["moment"] == pytest.approx(expected_moment, abs=1e-6)
@@ -289,11 +288,11 @@ class TestCreateStabilityCurvePointsParameters:
         data = {
             "name": "Test",
             "target_waterline": 0.1,
-            "target_weight": 10.0,
-            "target_payload": 80.0,
+            "target_weight": 5.0,
+            "target_payload": 20.0,
             "curves": [
-                {"name": "keel", "points": [[0.0, 0.0, 0.0], [2.5, 0.0, 0.05], [5.0, 0.0, 0.0]]},
-                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [2.5, 0.3, 0.25], [5.0, 0.0, 0.3]]},
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "gunwale", "points": [[0.0, 0.2, 0.4], [1.0, 0.35, 0.3], [2.0, 0.2, 0.4]]},
             ],
         }
         hull = Hull()
@@ -318,23 +317,23 @@ class TestCreateStabilityCurvePointsParameters:
         data = {
             "name": "Test",
             "target_waterline": 0.1,
-            "target_weight": 10.0,
-            "target_payload": 80.0,
+            "target_weight": 5.0,
+            "target_payload": 20.0,
             "curves": [
-                {"name": "keel", "points": [[0.0, 0.0, 0.0], [2.5, 0.0, 0.05], [5.0, 0.0, 0.0]]},
-                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [2.5, 0.3, 0.25], [5.0, 0.0, 0.3]]},
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "gunwale", "points": [[0.0, 0.2, 0.4], [1.0, 0.35, 0.3], [2.0, 0.2, 0.4]]},
             ],
         }
         hull = Hull()
         hull.build(data)
 
         _, _, _, stability_points = create_stability_curve_points(
-            hull, paddler_cg_z=0.25, paddler_weight=75.0, hull_weight=15.0, max_angle=30, step=15
+            hull, paddler_cg_z=0.25, paddler_weight=18.0, hull_weight=7.0, max_angle=30, step=15
         )
 
         assert len(stability_points) > 0
-        # Total weight should be 90.0
-        total_weight = 90.0
+        # Total weight should be 25.0
+        total_weight = 25.0
         for point in stability_points:
             expected_moment = total_weight * GRAVITY * point["gz"]
             assert point["moment"] == pytest.approx(expected_moment, rel=1e-3)

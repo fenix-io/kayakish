@@ -1,9 +1,17 @@
 import json
-from pprint import pprint
 import numpy as np
 from src.geometry.profile import Profile
 from src.geometry.point import Point3D
 from src.geometry.curve import Curve
+
+
+class WaterlineCalculationError(Exception):
+    """Raised when waterline calculation fails to converge.
+
+    Or when hull geometry is inadequate.
+    """
+
+    pass
 
 
 class Hull:
@@ -135,6 +143,14 @@ class Hull:
         # Calculate total volume
         volume = sum(volumes)
 
+        # Check if we have valid volume
+        if volume == 0:
+            raise WaterlineCalculationError(
+                "Hull has zero volume. The geometry may be degenerate "
+                "or incorrectly defined. Check that curves define a "
+                "valid 3D shape with non-zero cross-sections."
+            )
+
         # Calculate weighted CG
         cgx = 0.0
         cgy = 0.0
@@ -182,8 +198,11 @@ class Hull:
 
     def _calculate_waterline(self, weight: float, angle: float = 0.0):
         waterline = self.waterline or self.target_waterline or self.depth() / 3
+        max_iterations = 50  # Prevent infinite loops
+        iteration = 0
 
-        while 0 < waterline and waterline <= self.depth():
+        while 0 < waterline and waterline <= self.depth() and iteration < max_iterations:
+            iteration += 1
             x = self.min_x
             step = 0.05
             profiles = []
@@ -217,6 +236,15 @@ class Hull:
             # Calculate total volume
             volume = sum(volumes)
 
+            # Check if we have a valid volume
+            if volume == 0:
+                raise WaterlineCalculationError(
+                    f"Unable to calculate waterline: Hull has "
+                    f"insufficient volume at waterline {waterline:.3f}m. "
+                    f"The hull geometry may be too small or incorrectly "
+                    f"defined."
+                )
+
             # Calculate weighted CG
             cgx = 0.0
             cgy = 0.0
@@ -242,6 +270,29 @@ class Hull:
                 waterline += increment  # add the increment to the waterline to try to match the target weight
             else:
                 break
+
+        # If we exited due to bounds or iterations, raise an exception
+        if not locals().get("cb"):
+            if iteration >= max_iterations:
+                raise WaterlineCalculationError(
+                    f"Waterline calculation did not converge after "
+                    f"{max_iterations} iterations. Target weight: "
+                    f"{weight:.1f}kg, Hull volume: {self.volume:.4f}m³, "
+                    f"Maximum displacement at full depth: "
+                    f"{self.volume * 1000:.1f}kg. The target weight may "
+                    f"exceed the hull's buoyancy capacity."
+                )
+            elif waterline <= 0 or waterline > self.depth():
+                max_displacement = self.volume * 1000
+                raise WaterlineCalculationError(
+                    f"Waterline calculation went out of bounds "
+                    f"(waterline: {waterline:.3f}m, "
+                    f"depth: {self.depth():.3f}m). Target weight: "
+                    f"{weight:.1f}kg, Maximum possible displacement: "
+                    f"{max_displacement:.1f}kg. The hull geometry cannot "
+                    f"support the requested weight."
+                )
+
         return waterline, cb, displacement
 
     def _get_points_below_waterline(self, points: list[Point3D], waterline: float) -> list[Point3D]:

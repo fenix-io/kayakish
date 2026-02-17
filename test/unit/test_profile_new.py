@@ -1,7 +1,6 @@
 """Unit tests for the Profile class in geometry.profile module."""
 
 import pytest
-import numpy as np
 from src.geometry.profile import Profile
 from src.geometry.point import Point3D
 

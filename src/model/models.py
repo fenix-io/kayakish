@@ -2,8 +2,7 @@
 KayakHull class for defining and managing kayak hull geometry.
 """
 
-import numpy as np
-from typing import List, Dict, Optional, Tuple
+from typing import List, Tuple
 from pydantic import BaseModel, Field
 
 

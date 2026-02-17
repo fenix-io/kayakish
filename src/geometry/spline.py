@@ -54,19 +54,31 @@ class Spline3D:
         self.z = np.array([p.z for p in self.points])
 
         # Determine parametrization
-        x_monotonic = np.all(np.diff(self.x) > 0) or np.all(np.diff(self.x) < 0)
+        x_increasing = np.all(np.diff(self.x) > 0)
+        x_decreasing = np.all(np.diff(self.x) < 0)
+        x_monotonic = x_increasing or x_decreasing
 
         if self.parametrization == "auto":
             self.parametrization = "x" if x_monotonic else "chord"
 
         if self.parametrization == "x":
             # Parametrize by x - use PCHIP to avoid oscillations
-            self.t = self.x.copy()
-            self.sx = lambda t: t  # Identity function for x
-            self.sy = PchipInterpolator(self.x, self.y)
-            self.sz = PchipInterpolator(self.x, self.z)
+            # PCHIP requires strictly increasing x, so reverse if decreasing
+            if x_decreasing:
+                self.t = self.x[::-1].copy()
+                self.x_reversed = True
+                self.sx = lambda t: t  # Identity function for x
+                self.sy = PchipInterpolator(self.x[::-1], self.y[::-1])
+                self.sz = PchipInterpolator(self.x[::-1], self.z[::-1])
+            else:
+                self.t = self.x.copy()
+                self.x_reversed = False
+                self.sx = lambda t: t  # Identity function for x
+                self.sy = PchipInterpolator(self.x, self.y)
+                self.sz = PchipInterpolator(self.x, self.z)
         else:
             # Parameterization by cumulative chord length
+            self.x_reversed = False
             dist = np.sqrt(np.diff(self.x) ** 2 + np.diff(self.y) ** 2 + np.diff(self.z) ** 2)
             self.t = np.concatenate(([0], np.cumsum(dist)))
 
@@ -106,7 +118,9 @@ class Spline3D:
             raise ValueError("Requested x is outside the curve range")
 
         # Root-finding: solve sx(t) - x_obj = 0
-        f = lambda tau: self.sx(tau) - x_obj
+        def f(tau):
+            return self.sx(tau) - x_obj
+
         t_star = brentq(f, t_min, t_max)
 
         return self.eval_t(t_star)
@@ -119,9 +133,15 @@ class Spline3D:
         Return the unit tangent vector T(t) as a NumPy array.
         T = r'(t) / |r'(t)|
         """
-        dx = self.sx.derivative(1)(t)
-        dy = self.sy.derivative(1)(t)
-        dz = self.sz.derivative(1)(t)
+        if self.parametrization == "x":
+            # When parametrized by x, sx(t) = t, so derivative is 1
+            dx = 1.0
+            dy = self.sy.derivative(1)(t)
+            dz = self.sz.derivative(1)(t)
+        else:
+            dx = self.sx.derivative(1)(t)
+            dy = self.sy.derivative(1)(t)
+            dz = self.sz.derivative(1)(t)
         v = np.array([dx, dy, dz])
         return v / np.linalg.norm(v)
 
@@ -133,12 +153,17 @@ class Spline3D:
         Return the curvature κ(t) of the 3D spline.
         κ = |r'(t) × r''(t)| / |r'(t)|^3
         """
-        r1 = np.array(
-            [self.sx.derivative(1)(t), self.sy.derivative(1)(t), self.sz.derivative(1)(t)]
-        )
-        r2 = np.array(
-            [self.sx.derivative(2)(t), self.sy.derivative(2)(t), self.sz.derivative(2)(t)]
-        )
+        if self.parametrization == "x":
+            # When parametrized by x, sx(t) = t
+            r1 = np.array([1.0, self.sy.derivative(1)(t), self.sz.derivative(1)(t)])
+            r2 = np.array([0.0, self.sy.derivative(2)(t), self.sz.derivative(2)(t)])
+        else:
+            r1 = np.array(
+                [self.sx.derivative(1)(t), self.sy.derivative(1)(t), self.sz.derivative(1)(t)]
+            )
+            r2 = np.array(
+                [self.sx.derivative(2)(t), self.sy.derivative(2)(t), self.sz.derivative(2)(t)]
+            )
         cross = np.cross(r1, r2)
         return np.linalg.norm(cross) / np.linalg.norm(r1) ** 3
 
@@ -153,9 +178,12 @@ class Spline3D:
         T = self.tangent(t)
 
         # Second derivative gives direction change
-        d2 = np.array(
-            [self.sx.derivative(2)(t), self.sy.derivative(2)(t), self.sz.derivative(2)(t)]
-        )
+        if self.parametrization == "x":
+            d2 = np.array([0.0, self.sy.derivative(2)(t), self.sz.derivative(2)(t)])
+        else:
+            d2 = np.array(
+                [self.sx.derivative(2)(t), self.sy.derivative(2)(t), self.sz.derivative(2)(t)]
+            )
 
         # Remove tangent component to isolate normal direction
         dT_perp = d2 - np.dot(d2, T) * T
@@ -207,7 +235,7 @@ class Spline3D:
         ax: optional matplotlib 3D axis to draw on
         """
         import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D  # needed for 3D projection
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 needed for 3D projection
 
         # Create axis if not provided
         if ax is None:
@@ -245,8 +273,6 @@ class Spline3D:
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
     # Example usage
     points = [
         Point3D(0, 0, 0.30),

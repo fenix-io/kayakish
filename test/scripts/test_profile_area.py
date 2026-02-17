@@ -100,7 +100,7 @@ def test_invalid_plane():
 
     # La función calculate_area debería fallar
     try:
-        area = profile.calculate_area()
+        profile.calculate_area()
         assert False, "Debería haber fallado al detectar puntos fuera del plano"
     except ValueError as e:
         print(f"✅ Error detectado correctamente: {e}")

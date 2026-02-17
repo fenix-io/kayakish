@@ -21,6 +21,9 @@ dev: ## Run development server with uvicorn
 test: ## Run tests
 	.venv/bin/pytest test/
 
+coverage: ## Run tests with coverage report
+	.venv/bin/pytest --cov=src --cov-report=term-missing --cov-report=html test/
+
 lint: ## Run linter (flake8)
 	.venv/bin/flake8 src/ test/
 

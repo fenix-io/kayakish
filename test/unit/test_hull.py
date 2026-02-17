@@ -1,11 +1,9 @@
 """Unit tests for the Hull class in geometry.hull module."""
 
 import pytest
-import numpy as np
-from src.geometry.hull import Hull
+from src.geometry.hull import Hull, WaterlineCalculationError
 from src.geometry.point import Point3D
 from src.geometry.curve import Curve
-from src.geometry.profile import Profile
 
 
 class TestHullInit:
@@ -337,10 +335,10 @@ class TestHullAsDict:
 
 
 class TestHullBuildIntegration:
-    """Integration tests for build method (requires more setup)."""
+    """Integration tests for build method."""
 
-    def test_build_simple_hull(self):
-        """Test building a simple hull from data."""
+    def test_build_basic_setup(self):
+        """Test that build initializes hull attributes correctly."""
         data = {
             "name": "Simple Kayak",
             "description": "Test kayak",
@@ -348,178 +346,186 @@ class TestHullBuildIntegration:
             "target_weight": 10.0,
             "target_payload": 80.0,
             "curves": [
-                {"name": "keel", "points": [[0.0, 0.0, 0.0], [2.5, 0.0, 0.05], [5.0, 0.0, 0.0]]},
-                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [2.5, 0.3, 0.25], [5.0, 0.0, 0.3]]},
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "gunwale", "points": [[0.0, 0.0, 0.3], [1.0, 0.3, 0.25], [2.0, 0.0, 0.3]]},
             ],
         }
 
         hull = Hull()
         hull.build(data)
 
-        # Basic assertions
+        # Verify basic metadata
         assert hull.name == "Simple Kayak"
+        assert hull.description == "Test kayak"
+        assert hull.target_waterline == 0.1
+        assert hull.target_weight == 10.0
+        assert hull.target_payload == 80.0
+
+        # Verify dimensions are calculated
         assert hull.length() > 0
         assert hull.beam() > 0
         assert hull.depth() > 0
-        assert len(hull.curves) > 0  # Should include mirrored curves
-        assert len(hull.profiles) > 0  # Should generate profiles
+
+        # Verify curves: keel (centerline, not mirrored) + gunwale + mirrored gunwale = 3
+        assert len(hull.curves) == 3
+
+        # Verify profiles are generated
+        assert len(hull.profiles) > 0
+
+        # Verify volume and CG are calculated
         assert hull.volume > 0
         assert hull.cg is not None
+        assert isinstance(hull.cg, Point3D)
+
+        # Verify waterline calculation completed
         assert hull.waterline > 0
         assert hull.cb is not None
+        assert isinstance(hull.cb, Point3D)
         assert hull.displacement > 0
 
     def test_build_sets_min_max_bounds(self):
         """Test that build sets min/max bounds correctly."""
         data = {
             "name": "Test",
-            "curves": [{"name": "keel", "points": [[0.0, 0.0, 0.0], [5.0, 0.0, 0.1]]}],
+            "curves": [
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {
+                    "name": "gunwale",
+                    "points": [[0.0, 0.2, 0.2], [1.0, 0.25, 0.18], [2.0, 0.2, 0.2]],
+                },
+            ],
         }
 
         hull = Hull()
         hull.build(data)
 
-        assert hull.min_x == pytest.approx(0.0)
-        assert hull.max_x == pytest.approx(5.0)
-        assert hull.min_z == pytest.approx(0.0)
-        profile = ModelProfile(
-            station=1.0, port_points=[YZPoint(y=0.0, z=0.5), YZPoint(y=0.2, z=0.4)]
-        )
-        hull = Hull(metadata=metadata, profiles=[profile])
+        # Check bounds are set correctly
+        assert hull.min_x == pytest.approx(0.0, abs=1e-6)
+        assert hull.max_x == pytest.approx(2.0, abs=1e-6)
+        assert hull.min_y == pytest.approx(-0.25, abs=1e-6)  # Mirrored curve
+        assert hull.max_y == pytest.approx(0.25, abs=1e-6)
+        assert hull.min_z == pytest.approx(0.0, abs=1e-6)
+        assert hull.max_z == pytest.approx(0.2, abs=1e-6)
 
-        result = prepare_hull(hull)
+    def test_build_creates_mirrored_curves(self):
+        """Test that build creates mirrored curves for asymmetric curves."""
+        data = {
+            "name": "Test",
+            "curves": [
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "chine", "points": [[0.0, 0.2, 0.1], [1.0, 0.25, 0.08], [2.0, 0.2, 0.1]]},
+                {
+                    "name": "gunwale",
+                    "points": [[0.0, 0.15, 0.25], [1.0, 0.2, 0.22], [2.0, 0.15, 0.25]],
+                },
+            ],
+        }
 
-        assert result.name == "Kayak 001"
-        assert hasattr(result, "profiles")
-        assert len(result.profiles) == 1
+        hull = Hull()
+        hull.build(data)
 
-    def test_prepare_hull_multiple_profiles(self):
-        """Test prepare_hull with multiple profiles."""
-        metadata = Metadata(name="Multi Profile Kayak")
-        profiles = [
-            ModelProfile(station=0.0, port_points=[YZPoint(y=0.0, z=0.3)]),
-            ModelProfile(station=1.0, port_points=[YZPoint(y=0.0, z=0.5), YZPoint(y=0.2, z=0.4)]),
-            ModelProfile(station=2.0, port_points=[YZPoint(y=0.0, z=0.6), YZPoint(y=0.3, z=0.5)]),
-        ]
-        hull = Hull(metadata=metadata, profiles=profiles)
+        # Should have keel (not mirrored) + chine + gunwale + 2 mirrored = 5 total
+        assert len(hull.curves) == 5
 
-        result = prepare_hull(hull)
+        # Check that mirrored curves exist
+        curve_names = [c.name for c in hull.curves]
+        assert "keel" in curve_names
+        assert "chine" in curve_names
+        assert "gunwale" in curve_names
+        assert "Mirror of chine" in curve_names
+        assert "Mirror of gunwale" in curve_names
 
-        assert result.name == "Multi Profile Kayak"
-        assert len(result.profiles) == 3
+    def test_build_with_centerline_only_curve(self):
+        """Test that centerline curves (y=0) are not mirrored."""
+        data = {
+            "name": "Test",
+            "curves": [
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.05], [2.0, 0.0, 0.0]]},
+                {"name": "stem", "points": [[0.0, 0.0, 0.3], [1.0, 0.0, 0.28], [2.0, 0.0, 0.3]]},
+                {
+                    "name": "gunwale",
+                    "points": [[0.0, 0.2, 0.25], [1.0, 0.25, 0.23], [2.0, 0.2, 0.25]],
+                },
+            ],
+        }
 
-    def test_prepare_hull_with_none_metadata_fields(self):
-        """Test prepare_hull with optional metadata fields as None."""
-        metadata = Metadata(
-            name="Minimal Kayak", description=None, target_waterline=None, target_payload=None
-        )
-        hull = Hull(metadata=metadata, profiles=[])
+        hull = Hull()
+        hull.build(data)
 
-        result = prepare_hull(hull)
+        # Keel and stem are centerline (not mirrored), gunwale is mirrored
+        # Total: 2 centerline + 1 side + 1 mirrored = 4
+        assert len(hull.curves) == 4
 
-        assert result.name == "Minimal Kayak"
-        assert result.description is None
-        assert result.target_waterline is None
-        assert result.target_payload is None
+        # Check which curves are mirrored
+        mirrored_curves = [c for c in hull.curves if c.mirrored]
+        non_mirrored_curves = [c for c in hull.curves if not c.mirrored]
 
-    def test_prepare_hull_profile_processing(self):
-        """Test that profiles are processed (sorted, completed)."""
-        metadata = Metadata(name="Processing Test")
-        profile = ModelProfile(
-            station=1.0,
-            port_points=[YZPoint(y=0.3, z=0.3), YZPoint(y=0.0, z=0.5), YZPoint(y=0.2, z=0.4)],
-        )
-        hull = Hull(metadata=metadata, profiles=[profile])
+        assert len(mirrored_curves) == 1
+        assert len(non_mirrored_curves) == 3
 
-        result = prepare_hull(hull)
+    def test_waterline_calculation_exceeds_weight_capacity(self):
+        """Test that WaterlineCalculationError is raised when target weight exceeds hull capacity."""
+        # Create a very small hull with minimal volume
+        data = {
+            "name": "TinyHull",
+            "curves": [
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [0.5, 0.0, 0.0], [1.0, 0.0, 0.0]]},
+                {
+                    "name": "gunwale",
+                    "points": [[0.0, 0.1, 0.05], [0.5, 0.12, 0.05], [1.0, 0.1, 0.05]],
+                },
+            ],
+            "weights": [
+                {"name": "paddler", "weight": 500.0, "position": [0.5, 0.0, 0.1]}
+            ],  # Way too heavy
+        }
 
-        # Profile should be added
-        assert hasattr(result, "profiles")
-        assert len(result.profiles) == 1
+        hull = Hull()
+        with pytest.raises(WaterlineCalculationError) as exc_info:
+            hull.build(data)
 
+        # Check that the error message contains useful information
+        error_msg = str(exc_info.value)
+        assert "500" in error_msg or "weight" in error_msg.lower()
 
-class TestPrepareHullIntegration:
-    """Integration tests for hull preparation workflow."""
+    def test_waterline_calculation_insufficient_volume(self):
+        """Test that WaterlineCalculationError is raised when hull has insufficient volume."""
+        # Create a hull with curves that result in zero volume at low waterlines
+        data = {
+            "name": "FlatHull",
+            "curves": [
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [2.0, 0.0, 0.0]]},
+                {"name": "chine", "points": [[0.0, 0.01, 0.0], [1.0, 0.01, 0.0], [2.0, 0.01, 0.0]]},
+            ],
+            "weights": [{"name": "paddler", "weight": 10.0, "position": [1.0, 0.0, 0.05]}],
+        }
 
-    def test_full_hull_preparation_workflow(self):
-        """Test complete workflow with realistic hull data."""
-        metadata = Metadata(
-            name="Sea Kayak Pro",
-            description="High-performance sea kayak",
-            target_waterline=0.12,
-            target_payload=100.0,
-        )
+        hull = Hull()
+        with pytest.raises(WaterlineCalculationError) as exc_info:
+            hull.build(data)
 
-        profiles = [
-            ModelProfile(station=0.0, port_points=[YZPoint(y=0.0, z=0.30)]),
-            ModelProfile(
-                station=1.0,
-                port_points=[
-                    YZPoint(y=0.00, z=0.30),
-                    YZPoint(y=0.18, z=0.28),
-                    YZPoint(y=0.12, z=0.15),
-                ],
-            ),
-            ModelProfile(
-                station=2.0,
-                port_points=[
-                    YZPoint(y=0.00, z=0.35),
-                    YZPoint(y=0.20, z=0.30),
-                    YZPoint(y=0.15, z=0.20),
-                ],
-            ),
-            ModelProfile(station=3.0, port_points=[YZPoint(y=0.0, z=0.30)]),
-        ]
+        # Check that the error message mentions volume
+        error_msg = str(exc_info.value)
+        assert "volume" in error_msg.lower() or "insufficient" in error_msg.lower()
 
-        hull = Hull(metadata=metadata, profiles=profiles)
-        result = prepare_hull(hull)
+    def test_waterline_calculation_convergence_failure(self):
+        """Test handling when waterline calculation doesn't converge within max iterations."""
+        # Create a hull that is too small to support the weight
+        # The waterline will go out of bounds (exceed hull depth)
+        data = {
+            "name": "BadConvergenceHull",
+            "curves": [
+                {"name": "keel", "points": [[0.0, 0.0, 0.0], [0.5, 0.0, 0.01], [1.0, 0.0, 0.0]]},
+                # Very narrow and shallow hull
+                {
+                    "name": "gunwale",
+                    "points": [[0.0, 0.05, 0.02], [0.5, 0.06, 0.025], [1.0, 0.05, 0.02]],
+                },
+            ],
+            "weights": [{"name": "paddler", "weight": 85.0, "position": [0.5, 0.0, 0.015]}],
+        }
 
-        # Verify all metadata transferred
-        assert result.name == "Sea Kayak Pro"
-        assert result.description == "High-performance sea kayak"
-        assert result.target_waterline == 0.12
-        assert result.target_payload == 100.0
-
-        # Verify profiles were processed
-        assert len(result.profiles) == 4
-
-        # Check profile at station 1.0
-        station_1_profile = result.profiles[1]
-        assert station_1_profile.station == 1.0
-
-        # Check data_points: 3 original + 2 mirrored (excluding centerline) = 5
-        assert len(station_1_profile.data_points) == 5
-
-        # Check circular interpolation points (should be 120 for 360/3 degrees)
-        assert len(station_1_profile.points) > 0
-        assert len(station_1_profile.points) <= 120
-
-        # Sample some points around the circle to verify they have correct station
-        for point in station_1_profile.points[::30]:  # Sample every 30th point
-            assert point.x == 1.0  # All points should be at station 1.0
-            # Verify points are within reasonable bounds
-            assert -0.3 <= point.y <= 0.3
-            assert 0.0 <= point.z <= 0.4
-
-    def test_prepare_hull_with_complex_profiles(self):
-        """Test hull preparation with complex profile data."""
-        metadata = Metadata(name="Complex Hull")
-
-        profiles = [
-            ModelProfile(
-                station=i * 0.5,
-                port_points=[
-                    YZPoint(y=0.0, z=0.5),
-                    YZPoint(y=0.1 * (i + 1), z=0.4),
-                    YZPoint(y=0.15 * (i + 1), z=0.3),
-                    YZPoint(y=0.2 * (i + 1), z=0.2),
-                ],
-            )
-            for i in range(5)
-        ]
-
-        hull = Hull(metadata=metadata, profiles=profiles)
-        result = prepare_hull(hull)
-
-        assert result.name == "Complex Hull"
-        assert len(result.profiles) == 5
+        hull = Hull()
+        # This should raise an exception because the hull is too small to support 85kg
+        with pytest.raises(WaterlineCalculationError):
+            hull.build(data)

@@ -282,7 +282,7 @@ class TestPoint3DOperators:
         p = Point3D(1, 2, 3)
         assert p != "not a point"
         assert p != [1, 2, 3]
-        assert p != None
+        assert p is not None
 
     def test_addition(self):
         """Test point addition."""

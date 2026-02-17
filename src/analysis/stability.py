@@ -165,7 +165,7 @@ def create_stability_curve_points(
     #     print(f"\n✓ Positive stability throughout range (0° to {max_angle}°)")
 
     # Find maximum GZ and its angle
-    max_gz_point = max(stability_points, key=lambda p: p["gz"])
+    # max_gz_point = max(stability_points, key=lambda p: p["gz"])
     # print(f"Maximum GZ: {max_gz_point['gz']:.4f}m at {max_gz_point['angle']:.1f}°")
     # print(f"Maximum Righting Moment: {max_moment:.1f} N·m at {max_moment_angle:.1f}°")
 
@@ -231,7 +231,9 @@ if __name__ == "__main__":
     print(f"Calculating stability curve with paddler CG at z={payload_cg_z}m")
     print("=" * 70)
 
-    stability_curve = create_stability_curve(hull, paddler_cg_z=payload_cg_z, max_angle=90, step=5)
+    stability_curve = create_stability_curve_points(
+        hull, paddler_cg_z=payload_cg_z, max_angle=90, step=5
+    )
 
     print("\n" + "=" * 70)
     plot_stability_curve(stability_curve, hull.name)

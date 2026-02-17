@@ -14,20 +14,20 @@ class TestCurveInit:
         curve = Curve("test_curve", points)
         assert curve.name == "test_curve"
         assert len(curve.points) == 3
-        assert curve.mirrored == False
+        assert curve.mirrored is False
 
     def test_init_with_mirrored_true(self):
         """Test Curve initialization with mirrored=True."""
         points = [Point3D(0, 0, 0), Point3D(1, 1, 1), Point3D(2, 0, 2)]
         curve = Curve("mirrored_curve", points, mirrored=True)
-        assert curve.mirrored == True
+        assert curve.mirrored is True
         assert curve.name == "mirrored_curve"
 
     def test_init_with_mirrored_false(self):
         """Test Curve initialization with mirrored=False."""
         points = [Point3D(0, 0, 0), Point3D(1, 1, 1), Point3D(2, 0, 2)]
         curve = Curve("normal_curve", points, mirrored=False)
-        assert curve.mirrored == False
+        assert curve.mirrored is False
 
     def test_curve_inherits_from_spline3d(self):
         """Test that Curve inherits from Spline3D."""
@@ -54,14 +54,14 @@ class TestCurveInit:
         points = [Point3D(0, 0, 0), Point3D(1, 1, 1), Point3D(2, 0, 2)]
         curve = Curve("test", points, bc_type="clamped", mirrored=True)
         assert curve.bc_type == "clamped"
-        assert curve.mirrored == True
+        assert curve.mirrored is True
 
     def test_init_with_custom_parametrization(self):
         """Test Curve initialization with custom parametrization."""
         points = [Point3D(0, 0, 0), Point3D(1, 1, 1), Point3D(2, 0, 2)]
         curve = Curve("test", points, parametrization="chord", mirrored=False)
         assert curve.parametrization == "chord"
-        assert curve.mirrored == False
+        assert curve.mirrored is False
 
 
 class TestCurveUsage:
@@ -92,10 +92,10 @@ class TestCurveUsage:
 
         # Perform rotation
         origin = Point3D(0, 0, 0)
-        rotated = curve.apply_rotation_on_x_axis(origin, 45)
+        curve.apply_rotation_on_x_axis(origin, 45)
 
         # Original curve should still have mirrored flag
-        assert curve.mirrored == True
+        assert curve.mirrored is True
         # Rotated is a new Spline3D, may not have mirrored attribute
         # but that's okay - it's a new object
 
@@ -123,7 +123,7 @@ class TestCurveMirroredSemantics:
         curve = Curve("test", points, mirrored=True)
 
         # It's just a flag, doesn't affect the curve itself
-        assert curve.mirrored == True
+        assert curve.mirrored is True
         # The points themselves are unchanged
         assert curve.points[0].y == 0.0
         assert curve.points[1].y == 1.0
