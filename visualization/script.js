@@ -1,3 +1,5 @@
+import { HullRenderer } from './webgl-renderer.js';
+
 const API_BASE = window.location.origin;
 let selectedKayak = null;
 let hullDetails = null;
@@ -6,6 +8,7 @@ let currentTab = 'visualization';
 let stabilityData = null;
 let resistanceData = null;
 let notificationTimeout = null;
+let hullRenderer = null;
 
 // Notification functions
 function showNotification(message, type = 'success') {
@@ -44,8 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupStabilityCanvas();
     document.getElementById('viewSelect').addEventListener('change', (e) => {
         currentView = e.target.value;
-        if (hullDetails) {
-            drawHull(hullDetails);
+        if (hullRenderer) {
+            hullRenderer.setCameraPreset(currentView);
         }
     });
     
@@ -188,12 +191,11 @@ async function loadHullDetailsForVisualization() {
         
     } catch (error) {
         console.error('Error loading hull details:', error);
-        const canvas = document.getElementById('hullCanvas');
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#666';
-        ctx.font = '14px Arial';
-        ctx.fillText(`Error loading hull: ${error.message}`, canvas.width / 2 - 100, canvas.height / 2);
+        showNotification(`Error loading hull: ${error.message}`, 'error');
+        // Clear the visualization
+        if (hullRenderer) {
+            hullRenderer.clearHull();
+        }
     }
 }
 
@@ -384,255 +386,43 @@ function displayDetailedSummary(hull) {
 
 // Setup canvas
 function setupCanvas() {
-    const canvas = document.getElementById('hullCanvas');
-    const container = canvas.parentElement;
+    // Use the visualization tab container, not the entire canvas-container
+    const container = document.getElementById('visualization-tab');
     
-    // Resize canvas to fit container
-    function resizeCanvas() {
-        const rect = container.getBoundingClientRect();
-        canvas.width = rect.width - 30;
-        canvas.height = rect.height - 120; // Account for header and controls
+    // Try to initialize WebGL renderer
+    if (!hullRenderer) {
+        hullRenderer = new HullRenderer(container);
+        const initialized = hullRenderer.init();
         
-        if (hullDetails) {
-            drawHull(hullDetails);
+        if (!initialized) {
+            console.error('Failed to initialize WebGL renderer');
+            showNotification('WebGL not supported. Please use a modern browser.', 'error');
+            return;
         }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (hullRenderer) {
+                hullRenderer.resize();
+            }
+        });
     }
-    
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
 }
 
-// Draw hull on canvas
+// Draw hull using WebGL renderer
 function drawHull(hull) {
-    const canvas = document.getElementById('hullCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if (!hull.curves || hull.curves.length === 0) {
-        ctx.fillText('No hull data to display', canvas.width / 2 - 50, canvas.height / 2);
+    if (!hullRenderer) {
+        console.error('Hull renderer not initialized');
         return;
     }
     
-    // Calculate bounds and scale
-    const bounds = {
-        minX: hull.min_x || 0,
-        maxX: hull.max_x || 5,
-        minY: hull.min_y || -0.3,
-        maxY: hull.max_y || 0.3,
-        minZ: hull.min_z || 0,
-        maxZ: hull.max_z || 0.3
-    };
-    
-    // Add padding
-    const padding = 40;
-    const drawWidth = canvas.width - 2 * padding;
-    const drawHeight = canvas.height - 2 * padding;
-    
-    // Calculate scale and offset based on view
-    let scaleX, scaleY, offsetX, offsetY;
-    let getScreenCoords;
-    
-    switch (currentView) {
-        case 'iso': // Isometric side view
-            const scaleIso = Math.min(
-                drawWidth / ((bounds.maxX - bounds.minX) + (bounds.maxY - bounds.minY) * 0.5),
-                drawHeight / ((bounds.maxZ - bounds.minZ) + (bounds.maxX - bounds.minX) * 0.3)
-            );
-            offsetX = padding + drawWidth / 2;
-            offsetY = padding + drawHeight * 0.85;
-            
-            // Isometric projection from side-ish angle
-            getScreenCoords = (x, y, z) => ({
-                x: offsetX + (x - (bounds.maxX + bounds.minX) / 2) * scaleIso * 0.866 
-                    - y * scaleIso * 0.5,
-                y: offsetY - (z - bounds.minZ) * scaleIso 
-                    - (x - (bounds.maxX + bounds.minX) / 2) * scaleIso * 0.25 
-                    - y * scaleIso * 0.433
-            });
-            break;
-            
-        case 'side': // 2D Side view (X-Z)
-            scaleX = drawWidth / (bounds.maxX - bounds.minX);
-            scaleY = drawHeight / (bounds.maxZ - bounds.minZ);
-            const scaleSide = Math.min(scaleX, scaleY);
-            offsetX = padding + (drawWidth - (bounds.maxX - bounds.minX) * scaleSide) / 2;
-            offsetY = padding + drawHeight;
-            
-            getScreenCoords = (x, y, z) => ({
-                x: offsetX + (x - bounds.minX) * scaleSide,
-                y: offsetY - (z - bounds.minZ) * scaleSide
-            });
-            break;
-            
-        case 'top': // X-Y view
-            scaleX = drawWidth / (bounds.maxX - bounds.minX);
-            scaleY = drawHeight / (bounds.maxY - bounds.minY);
-            const scaleTop = Math.min(scaleX, scaleY);
-            offsetX = padding + (drawWidth - (bounds.maxX - bounds.minX) * scaleTop) / 2;
-            offsetY = padding + (drawHeight + (bounds.maxY - bounds.minY) * scaleTop) / 2;
-            
-            getScreenCoords = (x, y, z) => ({
-                x: offsetX + (x - bounds.minX) * scaleTop,
-                y: offsetY - (y - bounds.minY) * scaleTop
-            });
-            break;
-            
-        case 'front': // Y-Z view
-            scaleX = drawWidth / (bounds.maxY - bounds.minY);
-            scaleY = drawHeight / (bounds.maxZ - bounds.minZ);
-            const scaleFront = Math.min(scaleX, scaleY);
-            offsetX = padding + drawWidth / 2;
-            offsetY = padding + drawHeight;
-            
-            getScreenCoords = (x, y, z) => ({
-                x: offsetX + y * scaleFront,
-                y: offsetY - (z - bounds.minZ) * scaleFront
-            });
-            break;
-            
-        case '3d': // 3D isometric
-            // Calculate projected dimensions
-            const projectedWidth = (bounds.maxX - bounds.minX) * 0.866 + (bounds.maxY - bounds.minY) * 0.866;
-            const projectedHeight = (bounds.maxZ - bounds.minZ) + 
-                                   (bounds.maxX - bounds.minX) * 0.5 + 
-                                   (bounds.maxY - bounds.minY) * 0.5;
-            
-            const scale3d = Math.min(
-                drawWidth / projectedWidth,
-                drawHeight / projectedHeight
-            );
-            offsetX = padding + drawWidth / 2;
-            offsetY = padding + drawHeight * 0.8;
-            
-            getScreenCoords = (x, y, z) => ({
-                x: offsetX + (x - (bounds.maxX + bounds.minX) / 2) * scale3d * 0.866 
-                    - y * scale3d * 0.866,
-                y: offsetY - (z - bounds.minZ) * scale3d 
-                    - (x - (bounds.maxX + bounds.minX) / 2) * scale3d * 0.5 
-                    - y * scale3d * 0.5
-            });
-            break;
+    if (!hull || !hull.main_profiles || hull.main_profiles.length === 0) {
+        console.warn('No hull data to display');
+        return;
     }
     
-    // Draw curves
-    ctx.lineWidth = 2;
-    hull.curves.forEach(curve => {
-        if (curve.points.length < 2) return;
-        
-        // Draw curve segments with color based on waterline
-        for (let i = 0; i < curve.points.length - 1; i++) {
-            const p1 = curve.points[i];
-            const p2 = curve.points[i + 1];
-            
-            // Check if segment is below waterline
-            const belowWaterline = hull.waterline && 
-                                  (p1[2] < hull.waterline && p2[2] < hull.waterline);
-            
-            ctx.strokeStyle = belowWaterline ? '#99CCFF' : '#0000CC'; // Light blue below, dark blue above
-            
-            ctx.beginPath();
-            const point1 = getScreenCoords(...p1);
-            const point2 = getScreenCoords(...p2);
-            ctx.moveTo(point1.x, point1.y);
-            ctx.lineTo(point2.x, point2.y);
-            ctx.stroke();
-        }
-    });
-    
-    // Draw curve points
-    hull.curves.forEach(curve => {
-        curve.points.forEach(point => {
-            const coords = getScreenCoords(...point);
-            
-            // Check if point is below waterline
-            const belowWaterline = hull.waterline && point[2] < hull.waterline;
-            ctx.fillStyle = belowWaterline ? '#FFB3B3' : '#CC0000'; // Light pink below, dark red above
-            
-            ctx.beginPath();
-            ctx.arc(coords.x, coords.y, 3, 0, 2 * Math.PI);
-            ctx.fill();
-        });
-    });
-    
-    // Draw waterline
-    if (hull.waterline) {
-        ctx.strokeStyle = 'cyan';
-        ctx.lineWidth = 2;
-        
-        if (currentView === 'iso') {
-            // Draw waterline plane in isometric view
-            const wlFrontPort = getScreenCoords(bounds.minX, bounds.maxY, hull.waterline);
-            const wlFrontStbd = getScreenCoords(bounds.minX, bounds.minY, hull.waterline);
-            const wlRearPort = getScreenCoords(bounds.maxX, bounds.maxY, hull.waterline);
-            const wlRearStbd = getScreenCoords(bounds.maxX, bounds.minY, hull.waterline);
-            ctx.beginPath();
-            ctx.moveTo(wlFrontPort.x, wlFrontPort.y);
-            ctx.lineTo(wlRearPort.x, wlRearPort.y);
-            ctx.lineTo(wlRearStbd.x, wlRearStbd.y);
-            ctx.lineTo(wlFrontStbd.x, wlFrontStbd.y);
-            ctx.closePath();
-            ctx.stroke();
-        } else if (currentView === 'side') {
-            // Horizontal line at waterline height
-            const wl = getScreenCoords(bounds.minX, 0, hull.waterline);
-            const wr = getScreenCoords(bounds.maxX, 0, hull.waterline);
-            ctx.beginPath();
-            ctx.moveTo(wl.x, wl.y);
-            ctx.lineTo(wr.x, wr.y);
-            ctx.stroke();
-        } else if (currentView === 'front') {
-            // Horizontal line at waterline height
-            const wl = getScreenCoords(0, bounds.minY, hull.waterline);
-            const wr = getScreenCoords(0, bounds.maxY, hull.waterline);
-            ctx.beginPath();
-            ctx.moveTo(wl.x, wl.y);
-            ctx.lineTo(wr.x, wr.y);
-            ctx.stroke();
-        }
-    }
-    
-    // Draw main profiles (transverse cross-sections at key stations)
-    if (hull.main_profiles && hull.main_profiles.length > 0) {
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(0, 128, 0, 0.5)'; // Semi-transparent green
-        
-        hull.main_profiles.forEach(profile => {
-            if (!profile.points || profile.points.length < 2) return;
-            
-            // Draw profile as a closed loop
-            ctx.beginPath();
-            const firstPoint = getScreenCoords(...profile.points[0]);
-            ctx.moveTo(firstPoint.x, firstPoint.y);
-            
-            for (let i = 1; i < profile.points.length; i++) {
-                const point = getScreenCoords(...profile.points[i]);
-                ctx.lineTo(point.x, point.y);
-            }
-            
-            // Close the profile loop
-            ctx.closePath();
-            ctx.stroke();
-            
-            // Optionally fill the profile with semi-transparent color
-            // to better show the hull shape
-            ctx.fillStyle = 'rgba(0, 128, 0, 0.1)';
-            ctx.fill();
-        });
-    }
-    
-    // Draw axes labels
-    ctx.fillStyle = 'black';
-    ctx.font = '12px Arial';
-    const viewLabels = {
-        'iso': 'Isometric Side View (X-Y-Z)',
-        'side': '← Stern | X-axis (Length) | Bow →    ↑ Z (Height)',
-        'top': '← Stern | X-axis (Length) | Bow →    ← Port | Y-axis (Beam) | Starboard →',
-        'front': '← Port | Y-axis (Beam) | Starboard →    ↑ Z (Height)',
-        '3d': '3D Isometric View'
-    };
-    ctx.fillText(viewLabels[currentView], padding, canvas.height - 10);
+    // Render hull using WebGL
+    hullRenderer.renderHull(hull);
 }
 
 // Modal functions
@@ -801,9 +591,10 @@ async function confirmDeleteKayak() {
             selectedKayak = null;
             hullDetails = null;
             document.getElementById('kayakSummaryContainer').innerHTML = '<p>Select a kayak to view summary</p>';
-            const canvas = document.getElementById('hullCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Clear WebGL visualization
+            if (hullRenderer) {
+                hullRenderer.clearHull();
+            }
         }
         
     } catch (error) {
@@ -1042,11 +833,15 @@ async function handleEditHull(e) {
 function switchTab(tabName) {
     currentTab = tabName;
     
-    // Update tab buttons
+    // Update tab buttons by checking the onclick text
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.classList.remove('active');
+        // Check if this button's onclick contains the current tabName
+        const onclickAttr = btn.getAttribute('onclick');
+        if (onclickAttr && onclickAttr.includes(`'${tabName}'`)) {
+            btn.classList.add('active');
+        }
     });
-    event.target.classList.add('active');
     
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -1054,9 +849,9 @@ function switchTab(tabName) {
     });
     document.getElementById(`${tabName}-tab`).classList.add('active');
     
-    // Setup canvas when switching to relevant tabs
+    // Redraw content when switching to relevant tabs
     if (tabName === 'visualization' && hullDetails) {
-        setupCanvas();
+        // WebGL renderer is already initialized, just redraw
         drawHull(hullDetails);
     } else if (tabName === 'stability' && stabilityData) {
         setupStabilityCanvas();
@@ -1065,9 +860,11 @@ function switchTab(tabName) {
         setupResistanceCanvas();
         drawResistanceResults(resistanceData);
     } else if (tabName === 'profiles' && currentProfile) {
-        // Redraw profiles when tab becomes visible
-        drawProfile();
-        drawHullSideView();
+        // Defer drawing until browser completes layout (canvas needs dimensions)
+        requestAnimationFrame(() => {
+            drawProfile();
+            drawHullSideView();
+        });
     }
 }
 
@@ -2368,50 +2165,32 @@ function drawHullSideView() {
         return;
     }
     
-    // // Calculate bounds (X-Z plane for side view)
-    // let minX = Infinity, maxX = -Infinity;
-    // let minZ = Infinity, maxZ = -Infinity;
+    // Calculate bounds (X-Z plane for side view)
+    const minX = 0;
+    const maxX = length;
+    const minZ = 0;
+    const maxZ = depth;
     
-    // curves.forEach(curve => {
-    //     curve.points.forEach(p => {
-    //         minX = Math.min(minX, p[0]);
-    //         maxX = Math.max(maxX, p[0]);
-    //         minZ = Math.min(minZ, p[2]);
-    //         maxZ = Math.max(maxZ, p[2]);
-    //     });
-    // });
-    minX = 0;
-    maxX = length;
-    minZ = 0;
-    maxZ = depth;
     // Add padding
     const padding = 35;
     const drawWidth = canvas.width - 2 * padding;
     const drawHeight = canvas.height - 2 * padding;
     
     // Calculate scale
-    const rangeX = length;
-    const rangeZ = depth;
+    const rangeX = maxX - minX;
+    const rangeZ = maxZ - minZ;
     const scaleX = drawWidth / rangeX;
     const scaleZ = drawHeight / rangeZ;
-    const scale = Math.min(scaleX, scaleZ) * 0.96;
+    const scale = Math.min(scaleX, scaleZ) * 0.9;
     
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    
-    // Helper function to convert profile coords to canvas coords
-    function toCanvas(y, z) {
-        return {
-            x: centerX + (y - (minY + maxY) / 2) * scale,
-            y: centerY - (z - (minZ + maxZ) / 2) * scale
-        };
-    }    
 
     // Helper function to convert coords to canvas coords
     function toCanvas(x, z) {
         return {
-            x: centerX + padding + ((x - (rangeX / 2)) * scale),
-            y: centerY - padding - ((z - (rangeZ / 2)) * scale)
+            x: centerX + ((x - rangeX / 2) * scale),
+            y: centerY - ((z - rangeZ / 2) * scale)
         };
     }
     
@@ -2466,3 +2245,18 @@ function drawHullSideView() {
     ctx.fillText('Height (Z)', 0, 0);
     ctx.restore();
 }
+
+// Expose functions to global scope for inline onclick handlers
+// (Required because script.js is now an ES6 module)
+window.switchTab = switchTab;
+window.openCreateModal = openCreateModal;
+window.closeCreateModal = closeCreateModal;
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.openDeleteModal = openDeleteModal;
+window.closeDeleteModal = closeDeleteModal;
+window.confirmDeleteKayak = confirmDeleteKayak;
+window.changeProfile = changeProfile;
+window.selectStation = selectStation;
+window.toggleDetailsView = toggleDetailsView;
+window.closeNotification = closeNotification;

@@ -169,3 +169,93 @@ The glossary footer says:
 - [x] **R9. Unit Tests (Phase 1)** — Wrote comprehensive tests for wetted surface area, waterline length/beam, and hull form coefficients. Tests include Profile.wetted_perimeter() (7 tests), Hull wetted surface/waterline methods (12 tests), and hull_parameters functions (24 tests). Total: 43 Phase 1 tests passing.
 - [x] **R9. Unit Tests (Phase 2)** — Wrote comprehensive tests for resistance calculations including Reynolds/Froude numbers (12 tests), ITTC friction coefficient (5 tests), frictional resistance (5 tests), residuary resistance (7 tests), power calculations (9 tests), complete resistance calculation (5 tests), resistance curves (2 tests), energy calculations (5 tests), and integration tests (3 tests). Total: 61 Phase 2 tests passing.
 - [x] **R10. Documentation** — Updated `docs/Architecture.md` with resistance analysis architecture (new modules, calculation methods, API endpoint). Updated `docs/User_Guide.md` with complete user documentation for running resistance analysis via Web UI and API, including parameter reference, result interpretation, and best practices.
+
+---
+
+# WebGL Visualization with Three.js
+
+> Planning document: [docs/Planning_to_use_webgl.md](docs/Planning_to_use_webgl.md)
+
+## Overview
+
+Migrate hull visualization from 2D Canvas to WebGL using Three.js. This will provide realistic 3D surface rendering with lighting, shadows, and interactive camera controls, while maintaining the wireframe mode as an optional technical overlay.
+
+## Phase 1: Three.js Setup & Scene Configuration
+
+- [x] **W1.1. Add Three.js Library** — Include Three.js via CDN using ESM import maps in `index.html`. No build step required.
+- [x] **W1.2. Create WebGL Renderer Module** — Create `visualization/webgl-renderer.js` with `HullRenderer` class. Initialize WebGL renderer, scene, and camera with proper configuration.
+- [x] **W1.3. Add OrbitControls** — Implement interactive camera navigation (drag to rotate, scroll to zoom, right-drag to pan). Configure damping and constraints.
+- [x] **W1.4. Configure Responsive Canvas** — Handle dynamic resizing, maintain aspect ratio, and support high-DPI displays (retina).
+
+**Deliverables:** ✅ Empty 3D scene with working camera controls, grid helper, and axes for reference.
+
+## Phase 2: Hull Surface Mesh Generation
+
+- [ ] **W2.1. Implement Profile-Based Mesh Builder with Arc-Length Resampling** — Create function to generate `BufferGeometry` from main_profiles data. Implement arc-length parameterization to handle profiles with different point counts. Build quad faces between adjacent resampled profiles, calculate smooth normals.
+- [ ] **W2.2. Handle Irregular Geometry and Topology Changes** — Test arc-length resampling with curves of varying lengths. Validate with hulls having multiple keels, chines, gunnels. Test with partial curves (deck, cockpit features). Verify smooth transitions where curves start/end mid-hull.
+- [ ] **W2.3. Handle Symmetry and Closure** — Process port/starboard symmetry from profile data. Create bow/stern end caps if profiles don't close naturally. Ensure keel closure at centerline. Validate mesh is closed with no gaps.
+- [ ] **W2.4. Add Waterline Plane** — Create semi-transparent plane at `Z = waterline` with water-like material (cyan, 30% opacity). Add toggle control.
+- [ ] **W2.5. Setup Materials and Textures** — Configure `MeshPhongMaterial` for realistic shading. Implement vertex colors for above/below waterline regions. Add specularity for wet hull appearance. Enable double-sided rendering for robust visualization.
+
+**Deliverables:** Solid 3D hull surface with proper shading, distinguishable above/below waterline regions, and correct handling of irregular curve geometry with smooth transitions.
+
+## Phase 3: Wireframe & Technical Overlays
+
+- [ ] **W3.1. Implement Wireframe Overlay Mode** — Add optional wireframe rendering using `LineSegments` with `EdgesGeometry`. Create toggle button in UI.
+- [ ] **W3.2. Draw Longitudinal Curves** — Render original curve data as `LineSegments`. Use color-coding (blue for above waterline, light blue for below). Add toggle control.
+- [ ] **W3.3. Draw Profile Cross-Sections** — Render profile loops at stations using semi-transparent green lines (matching current style). Add toggle control.
+- [ ] **W3.4. Add Measurement Overlays** — Display length, beam, depth annotations. Show waterline level indicator and station markers.
+
+**Deliverables:** Multiple visualization modes - pure surface, wireframe only, surface+wireframe overlay, and full technical view with curves and profiles.
+
+## Phase 4: Lighting, Shadows & Visual Polish
+
+- [ ] **W4.1. Implement Shadow Mapping** — Configure `DirectionalLight` with shadow camera. Add shadow-receiving plane (ground/water). Configure shadow quality settings.
+- [ ] **W4.2. Add Environment Effects** — Implement three-point lighting setup (key, fill, ambient). Optional: add hemisphere light for outdoor feel. Optional: HDR environment map.
+- [ ] **W4.3. Implement Camera Presets** — Add preset views (isometric, profile/side, plan/top, bow, stern). Implement smooth animated transitions between views.
+- [ ] **W4.4. Add Visual Feedback** — Show loading indicator during mesh generation. Add FPS counter for debug mode. Implement render quality settings.
+
+**Deliverables:** Professional-looking 3D visualization with realistic lighting, smooth camera transitions, and proper depth perception.
+
+## Phase 5: UI Integration & Migration
+
+- [ ] **W5.1. Update UI Controls** — Replace view dropdown with camera preset buttons. Add rendering mode toggle (surface/wireframe/hybrid/technical). Add quality settings (shadows, waterline toggles).
+- [ ] **W5.2. Integrate with Existing script.js** — Replace canvas drawing calls with `HullRenderer` methods. Maintain existing data loading logic. Keep stability/resistance tabs unchanged.
+- [ ] **W5.3. Update Legend and Help** — Document new camera controls (mouse/touch gestures). Explain rendering modes. Add keyboard shortcuts reference.
+- [ ] **W5.4. Fallback Handling** — Detect WebGL support and show appropriate message. Implement graceful degradation to 2D canvas for unsupported browsers. Add error handling for WebGL context loss.
+
+**Deliverables:** Seamless replacement of canvas visualization with minimal impact on existing features and maintained backward compatibility.
+
+## Phase 6: Testing & Optimization
+
+- [ ] **W6.1. Performance Testing** — Test with complex hulls (many curves/profiles). Profile rendering performance and optimize geometry if needed. Implement LOD (Level of Detail) if necessary.
+- [ ] **W6.2. Cross-Browser Testing** — Test on Chrome, Firefox, Safari, Edge. Test mobile browsers with touch controls. Verify fallback behavior.
+- [ ] **W6.3. Visual Quality Verification** — Verify waterline accuracy and hull proportions. Check symmetry and proper shading. Compare with 2D canvas output for consistency.
+- [ ] **W6.4. User Acceptance Testing** — Gather user feedback on usability and performance. Tune default camera positions and lighting. Adjust controls for better UX.
+
+**Deliverables:** Smooth 60fps rendering, consistent appearance across browsers, and positive user feedback.
+
+## Future Enhancements (Post-MVP)
+
+These features can be added after the base WebGL visualization is complete:
+
+### Advanced Visualizations
+- [ ] **W7.1. Animated Heeling** — Animate hull rotation during stability analysis display
+- [ ] **W7.2. Resistance Flow Lines** — Visualize water flow patterns during resistance analysis
+- [ ] **W7.3. Multiple Hull Comparison** — Side-by-side 3D comparison of different hull designs
+- [ ] **W7.4. Interactive Section Cuts** — Add plane that cuts through hull to show internal cross-sections
+
+### Export Capabilities
+- [ ] **W8.1. Screenshot Export** — Save current 3D view as PNG/JPG image
+- [ ] **W8.2. 3D Model Export** — Export hull mesh to STL/OBJ format for 3D printing
+- [ ] **W8.3. Video Export** — Record turntable animation as video file
+
+### Interactive Tools
+- [ ] **W9.1. Measurement Tool** — Click two points to measure distance in 3D
+- [ ] **W9.2. Point Inspection** — Click on hull to display point coordinates and properties
+- [ ] **W9.3. Interactive Waterline** — Drag waterline plane up/down to see displacement changes
+
+### Visual Themes
+- [ ] **W10.1. Material Presets** — Add hull material appearances (fiberglass, wood, carbon fiber)
+- [ ] **W10.2. Environment Presets** — Different backgrounds (ocean, lake, workshop, showroom)
+- [ ] **W10.3. Color Customization** — User-definable hull colors and themes

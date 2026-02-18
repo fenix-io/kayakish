@@ -301,6 +301,11 @@ h3 {
     border: 1px solid #ddd;
     background-color: #fafafa;
     flex: 1;
+    cursor: grab;
+}
+
+#hullCanvas:active {
+    cursor: grabbing;
 }
 
 .loading {
