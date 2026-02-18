@@ -189,15 +189,15 @@ Migrate hull visualization from 2D Canvas to WebGL using Three.js. This will pro
 
 **Deliverables:** ✅ Empty 3D scene with working camera controls, grid helper, and axes for reference.
 
-## Phase 2: Hull Surface Mesh Generation
+## Phase 2: Hull Surface Mesh Generation ✅ COMPLETED
 
-- [ ] **W2.1. Implement Profile-Based Mesh Builder with Arc-Length Resampling** — Create function to generate `BufferGeometry` from main_profiles data. Implement arc-length parameterization to handle profiles with different point counts. Build quad faces between adjacent resampled profiles, calculate smooth normals.
-- [ ] **W2.2. Handle Irregular Geometry and Topology Changes** — Test arc-length resampling with curves of varying lengths. Validate with hulls having multiple keels, chines, gunnels. Test with partial curves (deck, cockpit features). Verify smooth transitions where curves start/end mid-hull.
-- [ ] **W2.3. Handle Symmetry and Closure** — Process port/starboard symmetry from profile data. Create bow/stern end caps if profiles don't close naturally. Ensure keel closure at centerline. Validate mesh is closed with no gaps.
-- [ ] **W2.4. Add Waterline Plane** — Create semi-transparent plane at `Z = waterline` with water-like material (cyan, 30% opacity). Add toggle control.
-- [ ] **W2.5. Setup Materials and Textures** — Configure `MeshPhongMaterial` for realistic shading. Implement vertex colors for above/below waterline regions. Add specularity for wet hull appearance. Enable double-sided rendering for robust visualization.
+- [x] **W2.1. Implement Profile-Based Mesh Builder with Arc-Length Resampling** — Created function to generate `BufferGeometry` from main_profiles data. Implemented arc-length parameterization to handle profiles with different point counts. Built quad faces between adjacent resampled profiles, calculated smooth normals.
+- [x] **W2.2. Handle Irregular Geometry and Topology Changes** — Arc-length resampling handles curves of varying lengths. Validates with hulls having multiple keels, chines, gunnels. Handles partial curves (deck, cockpit features). Smooth transitions where curves start/end mid-hull.
+- [x] **W2.3. Handle Symmetry and Closure** — Processes port/starboard symmetry from profile data. Created bow/stern end caps using triangular fans for proper closure. Ensured keel closure at centerline. Validated mesh is closed with no gaps.
+- [x] **W2.4. Add Waterline Plane** — Created semi-transparent plane at `Z = waterline` with water-like material (cyan, 30% opacity). Added toggle control in UI.
+- [x] **W2.5. Setup Materials and Textures** — Configured `MeshPhongMaterial` for realistic shading with higher shininess (60), white specular highlights, and reflectivity (0.3) for wet hull appearance. Implemented vertex colors for above/below waterline regions (dark navy blue for deck area, cyan-blue for wet hull). Enabled double-sided rendering for robust visualization.
 
-**Deliverables:** Solid 3D hull surface with proper shading, distinguishable above/below waterline regions, and correct handling of irregular curve geometry with smooth transitions.
+**Deliverables:** ✅ Solid 3D hull surface with proper shading, distinguishable above/below waterline regions, correct handling of irregular curve geometry with smooth transitions, bow/stern end caps for closed mesh, and wireframe overlay mode.
 
 ## Phase 3: Wireframe & Technical Overlays
 

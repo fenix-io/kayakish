@@ -70,35 +70,59 @@
             <!-- Tab Content: Visualization -->
             <div id="visualization-tab" class="tab-content active">
                 <div class="controls">
-                    <label for="viewSelect">View:</label>
+                    <label for="viewSelect">Camera:</label>
                     <select id="viewSelect">
-                        <option value="iso">Isometric Side View</option>
-                        <option value="side">Side View (X-Z)</option>
-                        <option value="top">Top View (X-Y)</option>
-                        <option value="front">Front View (Y-Z)</option>
-                        <option value="3d">3D Perspective</option>
+                        <option value="iso">Isometric View</option>
+                        <option value="side">Side View</option>
+                        <option value="top">Top View</option>
+                        <option value="front">Front View</option>
                     </select>
+                    
+                    <div class="control-divider"></div>
+                    
+                    <label style="display: flex; align-items: center; cursor: pointer; margin-left: 10px;">
+                        <input type="checkbox" id="showWireframe" style="margin-right: 5px;">
+                        <span>Wireframe</span>
+                    </label>
+                    
+                    <label style="display: flex; align-items: center; cursor: pointer; margin-left: 10px;">
+                        <input type="checkbox" id="showWaterline" checked style="margin-right: 5px;">
+                        <span>Waterline</span>
+                    </label>
+                    
+                    <label style="display: flex; align-items: center; cursor: pointer; margin-left: 10px;">
+                        <input type="checkbox" id="showCurves" style="margin-right: 5px;">
+                        <span>Curves</span>
+                    </label>
+                    
+                    <label style="display: flex; align-items: center; cursor: pointer; margin-left: 10px;">
+                        <input type="checkbox" id="showProfiles" style="margin-right: 5px;">
+                        <span>Profiles</span>
+                    </label>
                 </div>
                 <div class="legend">
                     <div class="legend-item">
+                        <span class="legend-color" style="background-color: #1A3366;"></span>
+                        <span>Hull (Above WL)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #66B3E6;"></span>
+                        <span>Hull (Below WL)</span>
+                    </div>
+                    <div class="legend-item">
                         <span class="legend-color" style="background-color: #0000CC;"></span>
-                        <span>Curves (Above WL)</span>
+                        <span>Curves</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-color" style="background-color: #99CCFF;"></span>
-                        <span>Curves (Below WL)</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-point" style="background-color: #CC0000;"></span>
-                        <span>Points (Above WL)</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-point" style="background-color: #FFB3B3;"></span>
-                        <span>Points (Below WL)</span>
+                        <span class="legend-color" style="background-color: #008000;"></span>
+                        <span>Profiles</span>
                     </div>
                     <div class="legend-item">
                         <span class="legend-color" style="background-color: cyan;"></span>
                         <span>Waterline</span>
+                    </div>
+                    <div class="legend-help">
+                        <span>💡 Drag to rotate • Scroll to zoom • Right-drag to pan</span>
                     </div>
                 </div>
                 <canvas id="hullCanvas"></canvas>

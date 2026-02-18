@@ -52,6 +52,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // Setup visualization toggles
+    document.getElementById('showWireframe').addEventListener('change', (e) => {
+        if (hullRenderer) {
+            hullRenderer.updateSettings({ showWireframe: e.target.checked });
+        }
+    });
+    
+    document.getElementById('showWaterline').addEventListener('change', (e) => {
+        if (hullRenderer) {
+            hullRenderer.updateSettings({ showWaterline: e.target.checked });
+        }
+    });
+    
+    document.getElementById('showCurves').addEventListener('change', (e) => {
+        if (hullRenderer) {
+            hullRenderer.updateSettings({ showCurves: e.target.checked });
+        }
+    });
+    
+    document.getElementById('showProfiles').addEventListener('change', (e) => {
+        if (hullRenderer) {
+            hullRenderer.updateSettings({ showProfiles: e.target.checked });
+        }
+    });
+    
     // Setup form submission handlers
     document.getElementById('createHullForm').addEventListener('submit', handleCreateHull);
     document.getElementById('editHullForm').addEventListener('submit', handleEditHull);

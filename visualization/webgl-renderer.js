@@ -15,6 +15,7 @@ export class HullRenderer {
         this.controls = null;
         this.hullMesh = null;
         this.waterlinePlane = null;
+        this.wireframeOverlay = null;
         this.curvesGroup = null;
         this.profilesGroup = null;
         this.animationId = null;
@@ -220,13 +221,16 @@ export class HullRenderer {
         // Build geometry from profiles
         const geometry = this.buildGeometryFromProfiles(profiles, hullData.waterline);
 
-        // Create material
+        // Create realistic hull material
         const material = new THREE.MeshPhongMaterial({
             vertexColors: true,
             side: THREE.DoubleSide,
             flatShading: false,
-            shininess: 30,
-            specular: 0x555555
+            shininess: 60,              // Higher shininess for glossy appearance
+            specular: new THREE.Color(0xffffff),  // White specular highlights
+            emissive: new THREE.Color(0x000000),  // No emissionreflectivity: 0.3,           // Some reflectivity for wet appearance
+            transparent: false,
+            opacity: 1.0
         });
 
         // Create mesh
@@ -234,6 +238,11 @@ export class HullRenderer {
         this.hullMesh.castShadow = true;
         this.hullMesh.receiveShadow = true;
         this.scene.add(this.hullMesh);
+
+        // Add wireframe overlay if enabled
+        if (this.settings.showWireframe) {
+            this.addWireframeOverlay(geometry);
+        }
     }
 
     /**
@@ -290,6 +299,12 @@ export class HullRenderer {
                 indices.push(vertexBase + 0, vertexBase + 3, vertexBase + 1);
             }
         }
+
+        // Add bow end cap (stern - first profile)
+        this.addEndCap(vertices, indices, colors, profiles[0], waterline, targetPointCount, false);
+
+        // Add stern end cap (bow - last profile)
+        this.addEndCap(vertices, indices, colors, profiles[profiles.length - 1], waterline, targetPointCount, true);
 
         // Create BufferGeometry
         const geometry = new THREE.BufferGeometry();
@@ -359,17 +374,105 @@ export class HullRenderer {
     }
 
     /**
-     * Add vertex color based on waterline
+     * Add end cap (bow or stern) using triangular fan
+     * @param {Array} vertices - Vertex array to append to
+     * @param {Array} indices - Index array to append to
      * @param {Array} colors - Color array to append to
-     * @param {Number} zCoord - Z coordinate of vertex
+     * @param {Object} profile - Profile object with points
+     * @param {Number} waterline - Waterline Z coordinate
+     * @param {Number} targetPointCount - Number of points in resampled profile
+     * @param {Boolean} reverse - Whether to reverse winding order (for correct normals)
+     */
+    addEndCap(vertices, indices, colors, profile, waterline, targetPointCount, reverse) {
+        // Resample profile to ensure uniform point distribution
+        const resampled = this.resampleProfileByArcLength(profile.points, targetPointCount);
+
+        // Calculate center point of the profile
+        let centerX = 0, centerY = 0, centerZ = 0;
+        for (const point of resampled) {
+            centerX += point[0];
+            centerY += point[1];
+            centerZ += point[2];
+        }
+        centerX /= resampled.length;
+        centerY /= resampled.length;
+        centerZ /= resampled.length;
+
+        // Add center vertex (transformed to Three.js coords)
+        const centerIndex = vertices.length / 3;
+        vertices.push(centerX, centerZ, centerY);
+        this.addVertexColor(colors, centerZ, waterline); // Use Z from kayak coords
+
+        // Add perimeter vertices
+        const perimeterStartIndex = vertices.length / 3;
+        for (const point of resampled) {
+            vertices.push(point[0], point[2], point[1]); // Transform coords
+            this.addVertexColor(colors, point[2], waterline);
+        }
+
+        // Create triangular fan from center to perimeter
+        for (let i = 0; i < targetPointCount; i++) {
+            const i_next = (i + 1) % targetPointCount;
+            const idx1 = perimeterStartIndex + i;
+            const idx2 = perimeterStartIndex + i_next;
+
+            // Add triangle with correct winding order
+            if (reverse) {
+                indices.push(centerIndex, idx2, idx1); // Reversed for bow
+            } else {
+                indices.push(centerIndex, idx1, idx2); // Normal for stern
+            }
+        }
+    }
+
+    /**
+     * Add wireframe overlay to the hull mesh
+     * @param {THREE.BufferGeometry} geometry - Hull geometry
+     */
+    addWireframeOverlay(geometry) {
+        // Remove existing wireframe if present
+        if (this.wireframeOverlay) {
+            this.scene.remove(this.wireframeOverlay);
+            this.wireframeOverlay.geometry.dispose();
+            this.wireframeOverlay.material.dispose();
+            this.wireframeOverlay = null;
+        }
+
+        if (!this.settings.showWireframe) {
+            return;
+        }
+
+        // Create edges geometry (only draws actual edges, not all triangle boundaries)
+        const edgesGeometry = new THREE.EdgesGeometry(geometry, 15); // Threshold angle in degrees
+        
+        // Create wireframe material
+        const wireframeMaterial = new THREE.LineBasicMaterial({
+            color: 0x000000,
+            linewidth: 1,
+            transparent: true,
+            opacity: 0.3,
+            depthTest: true
+        });
+
+        // Create line segments
+        this.wireframeOverlay = new THREE.LineSegments(edgesGeometry, wireframeMaterial);
+        this.scene.add(this.wireframeOverlay);
+    }
+
+    /**
+     * Add vertex color based on waterline (improved color scheme)
+     * @param {Array} colors - Color array to append to
+     * @param {Number} zCoord - Z coordinate of vertex (kayak coords)
      * @param {Number} waterline - Waterline Z coordinate
      */
     addVertexColor(colors, zCoord, waterline) {
         const isAboveWater = zCoord >= waterline;
         if (isAboveWater) {
-            colors.push(0.0, 0.0, 0.8);  // Dark blue above waterline
+            // Dark navy blue for above waterline (deck area)
+            colors.push(0.1, 0.2, 0.5);
         } else {
-            colors.push(0.6, 0.8, 1.0);  // Light blue below waterline
+            // Lighter cyan-blue for below waterline (wet hull)
+            colors.push(0.4, 0.7, 0.9);
         }
     }
 
@@ -490,6 +593,13 @@ export class HullRenderer {
             this.hullMesh.geometry.dispose();
             this.hullMesh.material.dispose();
             this.hullMesh = null;
+        }
+
+        if (this.wireframeOverlay) {
+            this.scene.remove(this.wireframeOverlay);
+            this.wireframeOverlay.geometry.dispose();
+            this.wireframeOverlay.material.dispose();
+            this.wireframeOverlay = null;
         }
 
         if (this.waterlinePlane) {
