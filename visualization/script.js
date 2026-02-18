@@ -313,6 +313,30 @@ function displayDetailedSummary(hull) {
         profilesHtml += '<p style="font-size: 11px; color: #666;">No profiles</p>';
     }
     
+    let mainProfilesHtml = '<h3 style="margin-top: 10px;">Main Profiles:</h3>';
+    if (hull.main_profiles && hull.main_profiles.length > 0) {
+        mainProfilesHtml += '<div style="max-height: 200px; overflow-y: auto;">';
+        hull.main_profiles.forEach((profile, idx) => {
+            const profileId = `main-profile-${idx}`;
+            mainProfilesHtml += `
+                <div class="collapsible-item">
+                    <div class="collapsible-header" onclick="toggleItem('${profileId}')">
+                        <span class="collapse-icon" id="${profileId}-icon">▼</span>
+                        <strong>Station ${profile.station.toFixed(3)} m</strong>
+                        <span style="color: #666; font-size: 10px; margin-left: 5px;">(${profile.points.length} points)</span>
+                    </div>
+                    <div class="collapsible-content" id="${profileId}">
+                        ${profile.points.map(p => `<div class="point-item">[${p[0].toFixed(3)}, ${p[1].toFixed(3)}, ${p[2].toFixed(3)}]</div>`).join('')}
+                    </div>
+                </div>
+            `;
+        });
+        mainProfilesHtml += '</div>';
+        mainProfilesHtml += '<p style="font-size: 10px; color: #666; margin-top: 5px; font-style: italic;">Shown in green on visualization</p>';
+    } else {
+        mainProfilesHtml += '<p style="font-size: 11px; color: #666;">No main profiles</p>';
+    }
+    
     summaryContainer.innerHTML = `
         <div class="summary-content">
             <div class="summary-row">
@@ -353,6 +377,7 @@ function displayDetailedSummary(hull) {
             </div>
             ${curvesHtml}
             ${profilesHtml}
+            ${mainProfilesHtml}
         </div>
     `;
 }
@@ -566,6 +591,35 @@ function drawHull(hull) {
             ctx.lineTo(wr.x, wr.y);
             ctx.stroke();
         }
+    }
+    
+    // Draw main profiles (transverse cross-sections at key stations)
+    if (hull.main_profiles && hull.main_profiles.length > 0) {
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(0, 128, 0, 0.5)'; // Semi-transparent green
+        
+        hull.main_profiles.forEach(profile => {
+            if (!profile.points || profile.points.length < 2) return;
+            
+            // Draw profile as a closed loop
+            ctx.beginPath();
+            const firstPoint = getScreenCoords(...profile.points[0]);
+            ctx.moveTo(firstPoint.x, firstPoint.y);
+            
+            for (let i = 1; i < profile.points.length; i++) {
+                const point = getScreenCoords(...profile.points[i]);
+                ctx.lineTo(point.x, point.y);
+            }
+            
+            // Close the profile loop
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Optionally fill the profile with semi-transparent color
+            // to better show the hull shape
+            ctx.fillStyle = 'rgba(0, 128, 0, 0.1)';
+            ctx.fill();
+        });
     }
     
     // Draw axes labels
