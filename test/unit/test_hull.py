@@ -124,6 +124,24 @@ class TestHullInitializeFromData:
         assert hull.min_z == 0.0
         assert hull.max_z == 0.4
 
+    def test_initialize_from_data_with_main_profiles(self):
+        """Test initialize_from_data with main_profiles data."""
+        data = {
+            "name": "Test",
+            "main_profiles": [
+                {"station": 0.0, "points": [[0, 0, 0], [0, 0.3, 0.2], [0, -0.3, 0.2]]},
+                {"station": 2.5, "points": [[2.5, 0, 0], [2.5, 0.4, 0.25], [2.5, -0.4, 0.25]]},
+            ],
+        }
+        hull = Hull()
+        hull.initialize_from_data(data)
+
+        assert len(hull.main_profiles) == 2
+        assert hull.main_profiles[0].station == 0.0
+        assert len(hull.main_profiles[0].points) == 3
+        assert hull.main_profiles[1].station == 2.5
+        assert len(hull.main_profiles[1].points) == 3
+
 
 class TestHullDimensions:
     """Tests for hull dimension methods."""
@@ -849,3 +867,176 @@ class TestHullWaterlineBeam:
         hull.waterline = None
         with pytest.raises(ValueError, match="Invalid waterline"):
             hull.waterline_beam()
+
+
+class TestHullMainProfiles:
+    """Tests for main_profiles feature and _get_main_profiles method."""
+
+    def test_main_profiles_created_at_curve_stations(self):
+        """Test that main profiles are created at each curve data point station."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+
+        # Should have main profiles at x=0, x=2.5, and x=5
+        assert len(hull.main_profiles) == 3
+        stations = [p.station for p in hull.main_profiles]
+        assert 0.0 in stations
+        assert 2.5 in stations
+        assert 5.0 in stations
+
+    def test_main_profiles_sorted_by_station(self):
+        """Test that main profiles are sorted by station (x-coordinate)."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[5, 0, 0], [2.5, 0, 0.05], [0, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[5, 0.2, 0.05], [2.5, 0.4, 0.15], [0, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[5, -0.2, 0.05], [2.5, -0.4, 0.15], [0, -0.2, 0.05]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+
+        # Verify profiles are sorted
+        stations = [p.station for p in hull.main_profiles]
+        assert stations == sorted(stations)
+
+    def test_main_profiles_contain_valid_profiles(self):
+        """Test that all main profiles are valid (have at least 3 points)."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [1, 0, 0.05], [2, 0, 0.1], [3, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [1, 0.3, 0.15], [2, 0.3, 0.2], [3, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [
+                        [0, -0.2, 0.05],
+                        [1, -0.3, 0.15],
+                        [2, -0.3, 0.2],
+                        [3, -0.2, 0.05],
+                    ],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [1.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+
+        # All main profiles should be valid
+        for profile in hull.main_profiles:
+            assert profile.is_valid()
+            assert len(profile.points) >= 3
+
+    def test_main_profiles_unique_stations(self):
+        """Test that main profiles have unique stations (no duplicates)."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2.5, -0.4, 0.15], [5, -0.2, 0.05]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+
+        # No duplicate stations
+        stations = [p.station for p in hull.main_profiles]
+        assert len(stations) == len(set(stations))
+
+    def test_main_profiles_with_different_curve_stations(self):
+        """Test main profiles when curves have different station points."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {
+                    "name": "keel",
+                    "points": [[0, 0, 0], [1, 0, 0.03], [2, 0, 0.05], [3, 0, 0.03], [4, 0, 0]],
+                },
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2, 0.3, 0.15], [4, 0.2, 0.05]],
+                },
+                {
+                    "name": "port_chine",
+                    "points": [[0, -0.2, 0.05], [2, -0.3, 0.15], [4, -0.2, 0.05]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2, 0, 0.1]}],
+        }
+        hull = Hull()
+        hull.build(data)
+
+        # Should have profiles at all unique stations: 0, 1, 2, 3, 4
+        stations = [p.station for p in hull.main_profiles]
+        assert 0.0 in stations
+        assert 1.0 in stations
+        assert 2.0 in stations
+        assert 3.0 in stations
+        assert 4.0 in stations
+        assert len(hull.main_profiles) == 5
+
+    def test_main_profiles_empty_with_no_curves(self):
+        """Test that main profiles is empty when hull has no curves."""
+        hull = Hull()
+        result = hull._get_main_profiles()
+        assert result == []
+
+    def test_main_profiles_initialized_attribute(self):
+        """Test that main_profiles attribute is initialized in Hull.__init__."""
+        hull = Hull()
+        assert hasattr(hull, "main_profiles")
+        assert isinstance(hull.main_profiles, list)
+        assert len(hull.main_profiles) == 0
+
+    def test_main_profiles_populated_after_build(self):
+        """Test that main_profiles is populated after hull.build()."""
+        data = {
+            "name": "Test Kayak",
+            "curves": [
+                {"name": "keel", "points": [[0, 0, 0], [2.5, 0, 0.05], [5, 0, 0]]},
+                {
+                    "name": "starboard_chine",
+                    "points": [[0, 0.2, 0.05], [2.5, 0.4, 0.15], [5, 0.2, 0.05]],
+                },
+            ],
+            "weights": [{"name": "test", "weight": 75, "position": [2.5, 0, 0.1]}],
+        }
+        hull = Hull()
+        assert len(hull.main_profiles) == 0  # Before build
+
+        hull.build(data)
+        assert len(hull.main_profiles) > 0  # After build

@@ -723,7 +723,10 @@ Or equivalently: $C_p = \frac{C_b}{C_m}$
 **Implementation:** Computed by `calculate_prismatic_coefficient()` in `src/analysis/hull_parameters.py`. Primary input to residuary resistance estimation.
 
 ### Profile
-A cross-sectional shape of the hull at a particular longitudinal station. In Kayakish, profiles are **auto-generated** by evaluating all spline curves at a given x-coordinate during the build process. Users define curves (not profiles directly), and the system creates profiles at regular 0.05 m intervals.
+A cross-sectional shape of the hull at a particular longitudinal station. In Kayakish, profiles are **auto-generated** by evaluating all spline curves at a given x-coordinate during the build process. Users define curves (not profiles directly), and the system creates two types of profiles:
+
+1. **Regular profiles** (`profiles`): Generated at regular 0.05 m intervals along the hull length for volume and hydrostatic calculations.
+2. **Main profiles** (`main_profiles`): Generated at each data point station where curve control points are defined. These provide complete transversal information at the key defining stations of the hull geometry, ideal for visualization and detailed analysis.
 
 **Context:** Geometry, Hull Definition  
 **Related Terms:** Cross-Section, Station, Curve, Spline

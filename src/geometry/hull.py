@@ -26,6 +26,7 @@ class Hull:
     def __init__(self):
         self.curves: list[Curve] = []
         self.profiles: list[Profile] = []
+        self.main_profiles: list[Profile] = []
 
     def _add_spline(self, spline: Curve):
         self.curves.append(spline)
@@ -276,6 +277,10 @@ class Hull:
             station = profile_data.get("station", 0.0)
             points = [Point3D(p[0], p[1], p[2]) for p in profile_data.get("points", [])]
             self.profiles.append(Profile(station, points))
+        for profile_data in data.get("main_profiles", []):
+            station = profile_data.get("station", 0.0)
+            points = [Point3D(p[0], p[1], p[2]) for p in profile_data.get("points", [])]
+            self.main_profiles.append(Profile(station, points))
 
     def build(self, data: dict):
         self.name = data.get("name", "KAYAK HULL")
@@ -300,11 +305,11 @@ class Hull:
                 p = Point3D(point[0], point[1], point[2])
                 self._update_min_max(p)
                 points.append(p)
-                y += point[1]
+                y += np.abs(point[1])
 
             spline = Curve(name, points, mirrored=False)
             self._add_spline(spline)
-            if y != 0:
+            if y > 0:
                 for point in spline_data.get("points", []):
                     p = Point3D(point[0], -point[1], point[2])
                     self._update_min_max(p)
@@ -321,6 +326,36 @@ class Hull:
         self.waterline = waterline
         self.cb = cb
         self.displacement = displacement
+        self.main_profiles = self._get_main_profiles()
+
+    def _get_main_profiles(self):
+        """Get profiles at each data point station defined in the curves.
+
+        Creates transverse profiles at every unique x-coordinate where curve
+        data points are defined. This ensures profiles exist at all defining
+        stations of the hull geometry, providing complete transversal information
+        for visualization and analysis.
+
+        Returns:
+            list[Profile]: List of valid profiles at curve data point stations,
+                          sorted by station (x-coordinate)
+        """
+        main_profiles = []
+        stations = {}
+        # Get all possible stations from all curves
+        for spline in self.curves:
+            for point in spline.points:
+                stations[point.x] = True
+
+        # Calculate a profile for each station
+        for station in sorted(stations.keys()):
+            points = self._get_points_at(station)
+            if len(points) >= 3:
+                profile = Profile(station, points)
+                if profile.is_valid():
+                    main_profiles.append(profile)
+
+        return main_profiles
 
     def _calculate_profiles_volume_and_cg(self):
         x = self.min_x

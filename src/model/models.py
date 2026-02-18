@@ -103,6 +103,7 @@ class HullModel(BaseModel):
     waterline: float | None = None
     displacement: float | None = None
     profiles: List[ProfileModel] = Field(default_factory=list)
+    main_profiles: List[ProfileModel] = Field(default_factory=list)
     min_x: float | None = None
     max_x: float | None = None
     min_y: float | None = None
@@ -170,6 +171,7 @@ class HullModel(BaseModel):
                         },
                     ],
                     "profiles": [],
+                    "main_profiles": [],
                 }
             ]
         }

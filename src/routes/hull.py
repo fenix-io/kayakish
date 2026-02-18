@@ -138,6 +138,12 @@ def create_hull(hull_model: CreateHullModel) -> HullModel:
                     station=profile.station, points=[(p.x, p.y, p.z) for p in profile.points]
                 )
             )
+        for profile in hull.main_profiles:
+            result.main_profiles.append(
+                ProfileModel(
+                    station=profile.station, points=[(p.x, p.y, p.z) for p in profile.points]
+                )
+            )
 
         os.makedirs(file_path.parent, exist_ok=True)
         with open(file_path, "w") as f:
@@ -213,6 +219,10 @@ def update_hull(hull_name: str, hull_model: CreateHullModel) -> HullModel:
         )
     for profile in hull.profiles:
         result.profiles.append(
+            ProfileModel(station=profile.station, points=[(p.x, p.y, p.z) for p in profile.points])
+        )
+    for profile in hull.main_profiles:
+        result.main_profiles.append(
             ProfileModel(station=profile.station, points=[(p.x, p.y, p.z) for p in profile.points])
         )
 

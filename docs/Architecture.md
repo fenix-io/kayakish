@@ -102,7 +102,10 @@ Implements a RESTful CRUD interface plus a stability analysis endpoint:
 **Create/Update flow:**
 1. Receive a `CreateHullModel` (name, metadata, curves).
 2. Instantiate a `Hull` object and call `hull.build()`.
-3. The build process: parses curves → mirrors non-centerline curves → generates transverse profiles at 0.05 m intervals → calculates total volume and CG → iteratively finds the equilibrium waterline for the target weight.
+3. The build process: parses curves → mirrors non-centerline curves → generates two types of transverse profiles:
+   - **Regular profiles** (`profiles`): at 0.05 m intervals for volume and hydrostatic calculations
+   - **Main profiles** (`main_profiles`): at each curve control point station for visualization
+   → calculates total volume and CG → iteratively finds the equilibrium waterline for the target weight.
 4. Map the computed `Hull` to a `HullModel` response and persist as a `.hull` JSON file.
 
 **Stability flow:**
@@ -119,7 +122,7 @@ All models use Pydantic v2 `BaseModel`:
 | `CurveModel` | A named curve with a list of `(x, y, z)` tuples and an optional `mirrored` flag |
 | `ProfileModel` | A transverse profile at a given station with its points |
 | `CreateHullModel` | Input schema for creating/updating a hull (name, metadata, curves) |
-| `HullModel` | Full hull response including computed properties (volume, CG, CB, waterline, displacement, profiles, bounds) |
+| `HullModel` | Full hull response including computed properties (volume, CG, CB, waterline, displacement, profiles, main_profiles, bounds) |
 | `HullSummaryModel` | Lightweight summary for list views |
 | `StabilityAnalysisModel` | Input parameters for stability analysis |
 | `StabilityPointModel` | A single point on the stability curve |
