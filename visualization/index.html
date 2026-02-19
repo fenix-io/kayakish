@@ -80,6 +80,15 @@
                     
                     <div class="control-divider"></div>
                     
+                    <label for="qualitySelect">Quality:</label>
+                    <select id="qualitySelect">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    
+                    <div class="control-divider"></div>
+                    
                     <label style="display: flex; align-items: center; cursor: pointer; margin-left: 10px;">
                         <input type="checkbox" id="showWireframe" style="margin-right: 5px;">
                         <span>Wireframe</span>
@@ -104,6 +113,20 @@
                         <input type="checkbox" id="showMeasurements" style="margin-right: 5px;">
                         <span>Measurements</span>
                     </label>
+                    
+                    <div class="control-divider"></div>
+                    
+                    <label style="display: flex; align-items: center; cursor: pointer; margin-left: 10px;">
+                        <input type="checkbox" id="showShadows" checked style="margin-right: 5px;">
+                        <span>Shadows</span>
+                    </label>
+                    
+                    <label style="display: flex; align-items: center; cursor: pointer; margin-left: 10px;">
+                        <input type="checkbox" id="showFPS" style="margin-right: 5px;">
+                        <span>FPS Counter</span>
+                    </label>
+                    
+                    <div id="fpsDisplay" style="margin-left: 10px; font-weight: bold; color: #00ff00; display: none;">FPS: 0</div>
                 </div>
                 <div class="legend">
                     <div class="legend-item">
@@ -141,6 +164,10 @@
                     <div class="legend-help">
                         <span>💡 Drag to rotate • Scroll to zoom • Right-drag to pan</span>
                     </div>
+                </div>
+                <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Generating hull mesh...</div>
                 </div>
                 <canvas id="hullCanvas"></canvas>
             </div>

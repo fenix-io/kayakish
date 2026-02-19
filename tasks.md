@@ -208,14 +208,14 @@ Migrate hull visualization from 2D Canvas to WebGL using Three.js. This will pro
 
 **Deliverables:** ✅ Multiple visualization modes - pure surface, wireframe overlay, surface with curves, surface with profiles, and full technical view with measurements. Complete waterline-based color coding for technical overlays.
 
-## Phase 4: Lighting, Shadows & Visual Polish
+## Phase 4: Lighting, Shadows & Visual Polish ✅ COMPLETED
 
-- [ ] **W4.1. Implement Shadow Mapping** — Configure `DirectionalLight` with shadow camera. Add shadow-receiving plane (ground/water). Configure shadow quality settings.
-- [ ] **W4.2. Add Environment Effects** — Implement three-point lighting setup (key, fill, ambient). Optional: add hemisphere light for outdoor feel. Optional: HDR environment map.
-- [ ] **W4.3. Implement Camera Presets** — Add preset views (isometric, profile/side, plan/top, bow, stern). Implement smooth animated transitions between views.
-- [ ] **W4.4. Add Visual Feedback** — Show loading indicator during mesh generation. Add FPS counter for debug mode. Implement render quality settings.
+- [x] **W4.1. Implement Shadow Mapping** — Configure `DirectionalLight` with shadow camera. Add shadow-receiving plane (ground/water). Configure shadow quality settings.
+- [x] **W4.2. Add Environment Effects** — Implement three-point lighting setup (key, fill, ambient). Optional: add hemisphere light for outdoor feel. Optional: HDR environment map.
+- [x] **W4.3. Implement Camera Presets** — Add preset views (isometric, profile/side, plan/top, bow, stern). Implement smooth animated transitions between views. *(Completed in Phase 2)*
+- [x] **W4.4. Add Visual Feedback** — Show loading indicator during mesh generation. Add FPS counter for debug mode. Implement render quality settings.
 
-**Deliverables:** Professional-looking 3D visualization with realistic lighting, smooth camera transitions, and proper depth perception.
+**Deliverables:** ✅ Professional-looking 3D visualization with realistic lighting, smooth camera transitions, and proper depth perception.
 
 ## Phase 5: UI Integration & Migration
 

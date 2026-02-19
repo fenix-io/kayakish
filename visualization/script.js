@@ -52,6 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    document.getElementById('qualitySelect').addEventListener('change', (e) => {
+        if (hullRenderer) {
+            hullRenderer.setQuality(e.target.value);
+        }
+    });
+    
     // Setup visualization toggles
     document.getElementById('showWireframe').addEventListener('change', (e) => {
         if (hullRenderer) {
@@ -80,6 +86,23 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('showMeasurements').addEventListener('change', (e) => {
         if (hullRenderer) {
             hullRenderer.updateSettings({ showMeasurements: e.target.checked });
+        }
+    });
+    
+    document.getElementById('showShadows').addEventListener('change', (e) => {
+        if (hullRenderer) {
+            hullRenderer.updateSettings({ showShadows: e.target.checked });
+        }
+    });
+    
+    document.getElementById('showFPS').addEventListener('change', (e) => {
+        if (hullRenderer) {
+            hullRenderer.updateSettings({ showFPS: e.target.checked });
+        }
+        // Show/hide FPS display element
+        const fpsDisplay = document.getElementById('fpsDisplay');
+        if (fpsDisplay) {
+            fpsDisplay.style.display = e.target.checked ? 'block' : 'none';
         }
     });
     

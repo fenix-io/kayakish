@@ -19,8 +19,10 @@ export class HullRenderer {
         this.curvesGroup = null;
         this.profilesGroup = null;
         this.measurementsGroup = null;
+        this.groundPlane = null;
         this.animationId = null;
         this.hullData = null;
+        this.keyLight = null;  // Store reference to key light for shadow toggling
         
         // Render settings
         this.settings = {
@@ -30,7 +32,15 @@ export class HullRenderer {
             showWaterline: true,
             showShadows: true,
             showMeasurements: false,
+            showFPS: false,
             renderMode: 'surface' // 'surface', 'wireframe', 'both', 'technical'
+        };
+        
+        // FPS tracking
+        this.fpsCounter = {
+            frames: 0,
+            lastTime: performance.now(),
+            fps: 0
         };
     }
 
@@ -112,14 +122,18 @@ export class HullRenderer {
      */
     setupLighting() {
         // 1. Key light (main directional light)
-        const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        keyLight.position.set(5, 10, 7.5);
-        keyLight.castShadow = this.settings.showShadows;
-        keyLight.shadow.mapSize.width = 2048;
-        keyLight.shadow.mapSize.height = 2048;
-        keyLight.shadow.camera.near = 0.5;
-        keyLight.shadow.camera.far = 50;
-        this.scene.add(keyLight);
+        this.keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        this.keyLight.position.set(5, 10, 7.5);
+        this.keyLight.castShadow = this.settings.showShadows;
+        this.keyLight.shadow.mapSize.width = 2048;
+        this.keyLight.shadow.mapSize.height = 2048;
+        this.keyLight.shadow.camera.near = 0.5;
+        this.keyLight.shadow.camera.far = 50;
+        this.keyLight.shadow.camera.left = -10;
+        this.keyLight.shadow.camera.right = 10;
+        this.keyLight.shadow.camera.top = 10;
+        this.keyLight.shadow.camera.bottom = -10;
+        this.scene.add(this.keyLight);
 
         // 2. Fill light (soften shadows)
         const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
@@ -140,7 +154,7 @@ export class HullRenderer {
     }
 
     /**
-     * Add visual helpers (grid, axes)
+     * Add visual helpers (grid, axes, ground plane)
      */
     addHelpers() {
         // Grid helper
@@ -150,6 +164,31 @@ export class HullRenderer {
         // Axes helper (X=red, Y=green, Z=blue)
         const axesHelper = new THREE.AxesHelper(2);
         this.scene.add(axesHelper);
+
+        // Add shadow-receiving ground/water plane
+        this.addGroundPlane();
+    }
+
+    /**
+     * Add a shadow-receiving ground plane (water surface)
+     */
+    addGroundPlane() {
+        const groundGeometry = new THREE.PlaneGeometry(50, 50);
+        const groundMaterial = new THREE.MeshPhongMaterial({
+            color: 0x4a90a4,  // Water-like blue-grey
+            transparent: true,
+            opacity: 0.4,
+            side: THREE.DoubleSide,
+            shininess: 100,
+            specular: new THREE.Color(0xffffff)
+        });
+
+        this.groundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
+        this.groundPlane.rotation.x = -Math.PI / 2;  // Rotate to horizontal (XZ plane)
+        this.groundPlane.position.y = -0.5;  // Slightly below origin
+        this.groundPlane.receiveShadow = true;
+        
+        this.scene.add(this.groundPlane);
     }
 
     /**
@@ -157,6 +196,11 @@ export class HullRenderer {
      */
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
+
+        // Update FPS counter
+        if (this.settings.showFPS) {
+            this.updateFPS();
+        }
 
         // Update controls
         if (this.controls) {
@@ -166,6 +210,28 @@ export class HullRenderer {
         // Render scene
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
+        }
+    }
+
+    /**
+     * Update FPS counter
+     */
+    updateFPS() {
+        this.fpsCounter.frames++;
+        const currentTime = performance.now();
+        const elapsed = currentTime - this.fpsCounter.lastTime;
+
+        // Update FPS display every 500ms
+        if (elapsed >= 500) {
+            this.fpsCounter.fps = Math.round((this.fpsCounter.frames * 1000) / elapsed);
+            this.fpsCounter.frames = 0;
+            this.fpsCounter.lastTime = currentTime;
+
+            // Update FPS display element if it exists
+            const fpsElement = document.getElementById('fpsDisplay');
+            if (fpsElement) {
+                fpsElement.textContent = `FPS: ${this.fpsCounter.fps}`;
+            }
         }
     }
 
@@ -181,36 +247,67 @@ export class HullRenderer {
 
         this.hullData = hullData;
 
-        // Clear existing hull meshes
-        this.clearHull();
+        // Show loading indicator
+        this.showLoading();
 
-        // Create hull mesh from profiles
-        if (hullData.main_profiles && hullData.main_profiles.length > 0) {
-            this.createHullMesh(hullData);
+        // Use setTimeout to allow UI to update before heavy computation
+        setTimeout(() => {
+            try {
+                // Clear existing hull meshes
+                this.clearHull();
+
+                // Create hull mesh from profiles
+                if (hullData.main_profiles && hullData.main_profiles.length > 0) {
+                    this.createHullMesh(hullData);
+                }
+
+                // Create waterline plane
+                if (hullData.waterline && this.settings.showWaterline) {
+                    this.createWaterlinePlane(hullData);
+                }
+
+                // Create curve lines
+                if (hullData.curves && this.settings.showCurves) {
+                    this.createCurveLines(hullData);
+                }
+
+                // Create profile lines
+                if (hullData.main_profiles && this.settings.showProfiles) {
+                    this.createProfileLines(hullData);
+                }
+
+                // Create measurement overlays
+                if (this.settings.showMeasurements) {
+                    this.createMeasurements(hullData);
+                }
+
+                // Adjust camera to fit hull
+                this.fitCameraToHull(hullData);
+            } finally {
+                // Hide loading indicator
+                this.hideLoading();
+            }
+        }, 10);
+    }
+
+    /**
+     * Show loading indicator
+     */
+    showLoading() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'flex';
         }
+    }
 
-        // Create waterline plane
-        if (hullData.waterline && this.settings.showWaterline) {
-            this.createWaterlinePlane(hullData);
+    /**
+     * Hide loading indicator
+     */
+    hideLoading() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
         }
-
-        // Create curve lines
-        if (hullData.curves && this.settings.showCurves) {
-            this.createCurveLines(hullData);
-        }
-
-        // Create profile lines
-        if (hullData.main_profiles && this.settings.showProfiles) {
-            this.createProfileLines(hullData);
-        }
-
-        // Create measurement overlays
-        if (this.settings.showMeasurements) {
-            this.createMeasurements(hullData);
-        }
-
-        // Adjust camera to fit hull
-        this.fitCameraToHull(hullData);
     }
 
     /**
@@ -925,11 +1022,75 @@ export class HullRenderer {
      * @param {Object} settings - Settings to update
      */
     updateSettings(settings) {
+        const oldSettings = {...this.settings};
         Object.assign(this.settings, settings);
+        
+        // Handle shadow toggling
+        if ('showShadows' in settings && settings.showShadows !== oldSettings.showShadows) {
+            this.toggleShadows(settings.showShadows);
+        }
         
         // Re-render if hull data exists
         if (this.hullData) {
             this.renderHull(this.hullData);
+        }
+    }
+
+    /**
+     * Set render quality
+     * @param {String} quality - Quality level: 'low', 'medium', or 'high'
+     */
+    setQuality(quality) {
+        if (!this.renderer || !this.keyLight) return;
+
+        const qualitySettings = {
+            low: {
+                pixelRatio: 1,
+                shadowMapSize: 512,
+                antialias: false
+            },
+            medium: {
+                pixelRatio: Math.min(window.devicePixelRatio, 1.5),
+                shadowMapSize: 1024,
+                antialias: true
+            },
+            high: {
+                pixelRatio: window.devicePixelRatio,
+                shadowMapSize: 2048,
+                antialias: true
+            }
+        };
+
+        const settings = qualitySettings[quality] || qualitySettings.medium;
+
+        // Update pixel ratio
+        this.renderer.setPixelRatio(settings.pixelRatio);
+
+        // Update shadow map size
+        this.keyLight.shadow.mapSize.width = settings.shadowMapSize;
+        this.keyLight.shadow.mapSize.height = settings.shadowMapSize;
+        this.keyLight.shadow.map?.dispose();
+        this.keyLight.shadow.map = null;
+
+        // Note: Antialias cannot be changed after renderer creation
+        // It would require recreating the renderer
+        
+        console.log(`Render quality set to: ${quality}`);
+    }
+
+    /**
+     * Toggle shadow rendering
+     * @param {Boolean} enabled - Enable or disable shadows
+     */
+    toggleShadows(enabled) {
+        if (this.keyLight) {
+            this.keyLight.castShadow = enabled;
+        }
+        if (this.renderer) {
+            this.renderer.shadowMap.enabled = enabled;
+        }
+        if (this.hullMesh) {
+            this.hullMesh.castShadow = enabled;
         }
     }
 
@@ -950,6 +1111,14 @@ export class HullRenderer {
         // Clear hull
         this.clearHull();
 
+        // Dispose of ground plane
+        if (this.groundPlane) {
+            this.scene.remove(this.groundPlane);
+            this.groundPlane.geometry.dispose();
+            this.groundPlane.material.dispose();
+            this.groundPlane = null;
+        }
+
         // Dispose of renderer
         if (this.renderer) {
             this.renderer.dispose();
@@ -960,5 +1129,6 @@ export class HullRenderer {
         this.camera = null;
         this.renderer = null;
         this.controls = null;
+        this.keyLight = null;
     }
 }
