@@ -18,6 +18,7 @@ export class HullRenderer {
         this.wireframeOverlay = null;
         this.curvesGroup = null;
         this.profilesGroup = null;
+        this.measurementsGroup = null;
         this.animationId = null;
         this.hullData = null;
         
@@ -28,6 +29,7 @@ export class HullRenderer {
             showProfiles: false,
             showWaterline: true,
             showShadows: true,
+            showMeasurements: false,
             renderMode: 'surface' // 'surface', 'wireframe', 'both', 'technical'
         };
     }
@@ -200,6 +202,11 @@ export class HullRenderer {
         // Create profile lines
         if (hullData.main_profiles && this.settings.showProfiles) {
             this.createProfileLines(hullData);
+        }
+
+        // Create measurement overlays
+        if (this.settings.showMeasurements) {
+            this.createMeasurements(hullData);
         }
 
         // Adjust camera to fit hull
@@ -504,25 +511,42 @@ export class HullRenderer {
     }
 
     /**
-     * Create curve lines
+     * Create curve lines with waterline-based color coding
      * @param {Object} hullData - Hull data
      */
     createCurveLines(hullData) {
         this.curvesGroup = new THREE.Group();
+        const waterline = hullData.waterline;
 
         hullData.curves.forEach(curve => {
             if (curve.points.length < 2) return;
 
-            // Transform coordinates: X=length, Z(kayak)→Y(three.js)=height, Y(kayak)→Z(three.js)=beam
-            const points = curve.points.map(p => new THREE.Vector3(p[0], p[2], p[1]));
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({ 
-                color: 0x0000CC,
-                linewidth: 2
-            });
+            // Create line segments with colors based on waterline position
+            for (let i = 0; i < curve.points.length - 1; i++) {
+                const p1 = curve.points[i];
+                const p2 = curve.points[i + 1];
 
-            const line = new THREE.Line(geometry, material);
-            this.curvesGroup.add(line);
+                // Transform coordinates: X=length, Z(kayak)→Y(three.js)=height, Y(kayak)→Z(three.js)=beam
+                const points = [
+                    new THREE.Vector3(p1[0], p1[2], p1[1]),
+                    new THREE.Vector3(p2[0], p2[2], p2[1])
+                ];
+
+                // Determine color based on average z-position (height in kayak coords)
+                const avgZ = (p1[2] + p2[2]) / 2;
+                const isAboveWater = avgZ >= waterline;
+                
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const material = new THREE.LineBasicMaterial({
+                    color: isAboveWater ? 0x0000CC : 0x99CCFF,  // Dark blue above, light blue below
+                    linewidth: 2,
+                    transparent: isAboveWater ? false : true,
+                    opacity: isAboveWater ? 1.0 : 0.8
+                });
+
+                const line = new THREE.Line(geometry, material);
+                this.curvesGroup.add(line);
+            }
         });
 
         this.scene.add(this.curvesGroup);
@@ -556,6 +580,155 @@ export class HullRenderer {
         });
 
         this.scene.add(this.profilesGroup);
+    }
+
+    /**
+     * Create measurement overlays (dimension lines and text labels)
+     * @param {Object} hullData - Hull data
+     */
+    createMeasurements(hullData) {
+        this.measurementsGroup = new THREE.Group();
+
+        const minX = hullData.min_x;
+        const maxX = hullData.max_x;
+        const minY = hullData.min_y;
+        const maxY = hullData.max_y;
+        const minZ = hullData.min_z;
+        const maxZ = hullData.max_z;
+        const waterline = hullData.waterline;
+
+        // Length measurement (stern to bow)
+        this.addDimensionLine(
+            new THREE.Vector3(minX, minZ, 0),
+            new THREE.Vector3(maxX, minZ, 0),
+            `Length: ${(maxX - minX).toFixed(2)}m`,
+            0xff0000,
+            new THREE.Vector3(0, -0.3, 0)
+        );
+
+        // Beam measurement (port to starboard at midship)
+        const midX = (minX + maxX) / 2;
+        this.addDimensionLine(
+            new THREE.Vector3(midX, minZ, minY),
+            new THREE.Vector3(midX, minZ, maxY),
+            `Beam: ${(maxY - minY).toFixed(2)}m`,
+            0x00ff00,
+            new THREE.Vector3(0, -0.3, 0)
+        );
+
+        // Depth measurement (keel to highest point at midship)
+        this.addDimensionLine(
+            new THREE.Vector3(minX, minZ, 0),
+            new THREE.Vector3(minX, maxZ, 0),
+            `Depth: ${(maxZ - minZ).toFixed(2)}m`,
+            0x0000ff,
+            new THREE.Vector3(-0.3, 0, 0)
+        );
+
+        // Waterline level indicator (horizontal line at waterline)
+        this.addWaterlineIndicator(hullData);
+
+        this.scene.add(this.measurementsGroup);
+    }
+
+    /**
+     * Add a dimension line with label
+     * @param {THREE.Vector3} start - Start point in Three.js coords
+     * @param {THREE.Vector3} end - End point in Three.js coords
+     * @param {String} label - Text label
+     * @param {Number} color - Line color (hex)
+     * @param {THREE.Vector3} labelOffset - Offset for label position
+     */
+    addDimensionLine(start, end, label, color, labelOffset) {
+        // Draw dimension line
+        const points = [start, end];
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const material = new THREE.LineBasicMaterial({
+            color: color,
+            linewidth: 2
+        });
+        const line = new THREE.Line(geometry, material);
+        this.measurementsGroup.add(line);
+
+        // Add end markers (small spheres)
+        const markerGeometry = new THREE.SphereGeometry(0.02, 8, 8);
+        const markerMaterial = new THREE.MeshBasicMaterial({ color: color });
+        
+        const startMarker = new THREE.Mesh(markerGeometry, markerMaterial);
+        startMarker.position.copy(start);
+        this.measurementsGroup.add(startMarker);
+
+        const endMarker = new THREE.Mesh(markerGeometry, markerMaterial);
+        endMarker.position.copy(end);
+        this.measurementsGroup.add(endMarker);
+
+        // Add text sprite at midpoint
+        const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+        midpoint.add(labelOffset);
+        const textSprite = this.createTextSprite(label, color);
+        textSprite.position.copy(midpoint);
+        this.measurementsGroup.add(textSprite);
+    }
+
+    /**
+     * Add waterline level indicator
+     * @param {Object} hullData - Hull data
+     */
+    addWaterlineIndicator(hullData) {
+        const waterline = hullData.waterline;
+        const minX = hullData.min_x;
+        const maxX = hullData.max_x;
+
+        // Create waterline indicator line at bow
+        const points = [
+            new THREE.Vector3(maxX, waterline, 0),
+            new THREE.Vector3(maxX + 0.2, waterline, 0)
+        ];
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const material = new THREE.LineBasicMaterial({
+            color: 0x00ffff,
+            linewidth: 3
+        });
+        const line = new THREE.Line(geometry, material);
+        this.measurementsGroup.add(line);
+
+        // Add label
+        const labelPos = new THREE.Vector3(maxX + 0.3, waterline, 0);
+        const textSprite = this.createTextSprite(`WL: ${waterline.toFixed(3)}m`, 0x00ffff);
+        textSprite.position.copy(labelPos);
+        this.measurementsGroup.add(textSprite);
+    }
+
+    /**
+     * Create a text sprite (canvas-based texture)
+     * @param {String} text - Text to display
+     * @param {Number} color - Text color (hex)
+     * @returns {THREE.Sprite}
+     */
+    createTextSprite(text, color) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = 256;
+        canvas.height = 64;
+
+        // Draw background
+        context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw text
+        context.font = 'Bold 24px Arial';
+        context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+        // Create sprite
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(material);
+        sprite.scale.set(0.5, 0.125, 1);  // Scale to reasonable size
+
+        return sprite;
     }
 
     /**
@@ -625,6 +798,18 @@ export class HullRenderer {
             });
             this.scene.remove(this.profilesGroup);
             this.profilesGroup = null;
+        }
+
+        if (this.measurementsGroup) {
+            this.measurementsGroup.traverse(child => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (child.material.map) child.material.map.dispose();
+                    child.material.dispose();
+                }
+            });
+            this.scene.remove(this.measurementsGroup);
+            this.measurementsGroup = null;
         }
     }
 

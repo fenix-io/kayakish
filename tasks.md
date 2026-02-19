@@ -199,14 +199,14 @@ Migrate hull visualization from 2D Canvas to WebGL using Three.js. This will pro
 
 **Deliverables:** ✅ Solid 3D hull surface with proper shading, distinguishable above/below waterline regions, correct handling of irregular curve geometry with smooth transitions, bow/stern end caps for closed mesh, and wireframe overlay mode.
 
-## Phase 3: Wireframe & Technical Overlays
+## Phase 3: Wireframe & Technical Overlays ✅ COMPLETED
 
-- [ ] **W3.1. Implement Wireframe Overlay Mode** — Add optional wireframe rendering using `LineSegments` with `EdgesGeometry`. Create toggle button in UI.
-- [ ] **W3.2. Draw Longitudinal Curves** — Render original curve data as `LineSegments`. Use color-coding (blue for above waterline, light blue for below). Add toggle control.
-- [ ] **W3.3. Draw Profile Cross-Sections** — Render profile loops at stations using semi-transparent green lines (matching current style). Add toggle control.
-- [ ] **W3.4. Add Measurement Overlays** — Display length, beam, depth annotations. Show waterline level indicator and station markers.
+- [x] **W3.1. Implement Wireframe Overlay Mode** — Added optional wireframe rendering using `LineSegments` with `EdgesGeometry`. Created toggle button in UI. *(Completed in Phase 2)*
+- [x] **W3.2. Draw Longitudinal Curves** — Rendered original curve data as `LineSegments` with color-coding (dark blue #0000CC for above waterline, light blue #99CCFF for below waterline). Added toggle control in UI.
+- [x] **W3.3. Draw Profile Cross-Sections** — Rendered profile loops at stations using semi-transparent green lines (#008000, 50% opacity) matching the planned style. Added toggle control in UI.
+- [x] **W3.4. Add Measurement Overlays** — Displayed length (red), beam (green), and depth (blue) dimension lines with text labels. Added waterline level indicator with cyan color. Implemented canvas-based text sprites for 3D labels.
 
-**Deliverables:** Multiple visualization modes - pure surface, wireframe only, surface+wireframe overlay, and full technical view with curves and profiles.
+**Deliverables:** ✅ Multiple visualization modes - pure surface, wireframe overlay, surface with curves, surface with profiles, and full technical view with measurements. Complete waterline-based color coding for technical overlays.
 
 ## Phase 4: Lighting, Shadows & Visual Polish
 

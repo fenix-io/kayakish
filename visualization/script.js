@@ -77,6 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    document.getElementById('showMeasurements').addEventListener('change', (e) => {
+        if (hullRenderer) {
+            hullRenderer.updateSettings({ showMeasurements: e.target.checked });
+        }
+    });
+    
     // Setup form submission handlers
     document.getElementById('createHullForm').addEventListener('submit', handleCreateHull);
     document.getElementById('editHullForm').addEventListener('submit', handleEditHull);
