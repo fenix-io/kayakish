@@ -26,6 +26,7 @@ export class HullRenderer {
         
         // Render settings
         this.settings = {
+            showSurface: true,
             showWireframe: false,
             showCurves: false,
             showProfiles: false,
@@ -81,6 +82,9 @@ export class HullRenderer {
         }
         this.container.appendChild(this.renderer.domElement);
 
+        // Set up WebGL context loss handling
+        this.setupContextLossHandling();
+
         // Add OrbitControls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
@@ -115,6 +119,54 @@ export class HullRenderer {
         } catch (e) {
             return false;
         }
+    }
+
+    /**
+     * Set up WebGL context loss and recovery handling
+     */
+    setupContextLossHandling() {
+        if (!this.renderer || !this.renderer.domElement) return;
+
+        const canvas = this.renderer.domElement;
+
+        // Handle context lost
+        canvas.addEventListener('webglcontextlost', (event) => {
+            event.preventDefault();
+            console.warn('WebGL context lost. Attempting recovery...');
+            
+            // Stop animation loop
+            if (this.animationId) {
+                cancelAnimationFrame(this.animationId);
+                this.animationId = null;
+            }
+            
+            // Show notification
+            if (window.showNotification) {
+                window.showNotification('WebGL context lost. Attempting to recover...', 'warning');
+            }
+        }, false);
+
+        // Handle context restored
+        canvas.addEventListener('webglcontextrestored', () => {
+            console.log('WebGL context restored. Re-initializing...');
+            
+            // Re-initialize the scene
+            this.setupLighting();
+            this.addHelpers();
+            
+            // Re-render hull if data exists
+            if (this.hullData) {
+                this.renderHull(this.hullData);
+            }
+            
+            // Restart animation loop
+            this.animate();
+            
+            // Show success notification
+            if (window.showNotification) {
+                window.showNotification('WebGL context recovered successfully.', 'success');
+            }
+        }, false);
     }
 
     /**
@@ -341,6 +393,7 @@ export class HullRenderer {
         this.hullMesh = new THREE.Mesh(geometry, material);
         this.hullMesh.castShadow = true;
         this.hullMesh.receiveShadow = true;
+        this.hullMesh.visible = this.settings.showSurface;
         this.scene.add(this.hullMesh);
 
         // Add wireframe overlay if enabled
@@ -1030,7 +1083,14 @@ export class HullRenderer {
             this.toggleShadows(settings.showShadows);
         }
         
-        // Re-render if hull data exists
+        // Handle surface visibility toggle (efficient - no re-render needed)
+        if ('showSurface' in settings && settings.showSurface !== oldSettings.showSurface) {
+            if (this.hullMesh) {
+                this.hullMesh.visible = settings.showSurface;
+            }
+        }
+        
+        // Re-render if hull data exists and non-visibility settings changed
         if (this.hullData) {
             this.renderHull(this.hullData);
         }

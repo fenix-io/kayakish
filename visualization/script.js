@@ -58,6 +58,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // Rendering mode selector
+    document.getElementById('renderModeSelect').addEventListener('change', (e) => {
+        if (hullRenderer) {
+            const mode = e.target.value;
+            
+            // Map rendering modes to settings
+            const modeSettings = {
+                surface: {
+                    showSurface: true,
+                    showWireframe: false,
+                    showCurves: false,
+                    showProfiles: false,
+                    showMeasurements: false
+                },
+                wireframe: {
+                    showSurface: false,
+                    showWireframe: true,
+                    showCurves: false,
+                    showProfiles: false,
+                    showMeasurements: false
+                },
+                both: {
+                    showSurface: true,
+                    showWireframe: true,
+                    showCurves: false,
+                    showProfiles: false,
+                    showMeasurements: false
+                },
+                technical: {
+                    showSurface: true,
+                    showWireframe: true,
+                    showCurves: true,
+                    showProfiles: true,
+                    showMeasurements: true
+                }
+            };
+            
+            const settings = modeSettings[mode];
+            if (settings) {
+                hullRenderer.updateSettings(settings);
+                
+                // Update checkbox UI to reflect mode
+                document.getElementById('showWireframe').checked = settings.showWireframe;
+                document.getElementById('showCurves').checked = settings.showCurves;
+                document.getElementById('showProfiles').checked = settings.showProfiles;
+                document.getElementById('showMeasurements').checked = settings.showMeasurements;
+            }
+        }
+    });
+    
     // Setup visualization toggles
     document.getElementById('showWireframe').addEventListener('change', (e) => {
         if (hullRenderer) {
@@ -106,11 +156,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // Setup modal event handlers
+    const controlsModal = document.getElementById('controlsModal');
+    const controlsInfoBtn = document.getElementById('controlsInfoBtn');
+    const closeControlsModal = document.getElementById('closeControlsModal');
+    
+    controlsInfoBtn.addEventListener('click', () => {
+        controlsModal.style.display = 'flex';
+    });
+    
+    closeControlsModal.addEventListener('click', () => {
+        controlsModal.style.display = 'none';
+    });
+    
+    // Close modal when clicking outside the content
+    controlsModal.addEventListener('click', (e) => {
+        if (e.target === controlsModal) {
+            controlsModal.style.display = 'none';
+        }
+    });
+    
     // Setup form submission handlers
     document.getElementById('createHullForm').addEventListener('submit', handleCreateHull);
     document.getElementById('editHullForm').addEventListener('submit', handleEditHull);
     document.getElementById('stabilityForm').addEventListener('submit', handleStabilityAnalysis);
     document.getElementById('resistanceForm').addEventListener('submit', handleResistanceAnalysis);
+    
+    // Setup keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger shortcuts if user is typing in an input field
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            return;
+        }
+        
+        if (!hullRenderer) return;
+        
+        switch(e.key.toLowerCase()) {
+            case '1':
+                document.getElementById('viewSelect').value = 'iso';
+                hullRenderer.setCameraPreset('iso');
+                break;
+            case '2':
+                document.getElementById('viewSelect').value = 'side';
+                hullRenderer.setCameraPreset('side');
+                break;
+            case '3':
+                document.getElementById('viewSelect').value = 'top';
+                hullRenderer.setCameraPreset('top');
+                break;
+            case '4':
+                document.getElementById('viewSelect').value = 'front';
+                hullRenderer.setCameraPreset('front');
+                break;
+            case 'w':
+                const wireframeCheckbox = document.getElementById('showWireframe');
+                wireframeCheckbox.checked = !wireframeCheckbox.checked;
+                hullRenderer.updateSettings({ showWireframe: wireframeCheckbox.checked });
+                break;
+            case 'c':
+                const curvesCheckbox = document.getElementById('showCurves');
+                curvesCheckbox.checked = !curvesCheckbox.checked;
+                hullRenderer.updateSettings({ showCurves: curvesCheckbox.checked });
+                break;
+            case 'p':
+                const profilesCheckbox = document.getElementById('showProfiles');
+                profilesCheckbox.checked = !profilesCheckbox.checked;
+                hullRenderer.updateSettings({ showProfiles: profilesCheckbox.checked });
+                break;
+            case 'm':
+                const measurementsCheckbox = document.getElementById('showMeasurements');
+                measurementsCheckbox.checked = !measurementsCheckbox.checked;
+                hullRenderer.updateSettings({ showMeasurements: measurementsCheckbox.checked });
+                break;
+        }
+    });
 });
 
 // Load list of kayaks
@@ -451,7 +570,31 @@ function setupCanvas() {
         if (!initialized) {
             console.error('Failed to initialize WebGL renderer');
             showNotification('WebGL not supported. Please use a modern browser.', 'error');
+            
+            // Show WebGL warning in legend
+            const webglWarning = document.getElementById('webglWarning');
+            if (webglWarning) {
+                webglWarning.style.display = 'block';
+            }
+            
+            // Disable visualization controls
+            const controls = [
+                'viewSelect', 'qualitySelect', 'renderModeSelect',
+                'showWireframe', 'showWaterline', 'showCurves', 
+                'showProfiles', 'showMeasurements', 'showShadows', 'showFPS'
+            ];
+            controls.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.disabled = true;
+            });
+            
             return;
+        }
+        
+        // Hide WebGL warning (only shown if WebGL fails)
+        const webglWarning = document.getElementById('webglWarning');
+        if (webglWarning) {
+            webglWarning.style.display = 'none';
         }
         
         // Handle window resize

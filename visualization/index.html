@@ -89,6 +89,16 @@
                     
                     <div class="control-divider"></div>
                     
+                    <label for="renderModeSelect">Display Mode:</label>
+                    <select id="renderModeSelect">
+                        <option value="surface">Surface Only</option>
+                        <option value="wireframe">Wireframe Only</option>
+                        <option value="both">Surface + Wireframe</option>
+                        <option value="technical">Technical (All Overlays)</option>
+                    </select>
+                    
+                    <div class="control-divider"></div>
+                    
                     <label style="display: flex; align-items: center; cursor: pointer; margin-left: 10px;">
                         <input type="checkbox" id="showWireframe" style="margin-right: 5px;">
                         <span>Wireframe</span>
@@ -127,6 +137,15 @@
                     </label>
                     
                     <div id="fpsDisplay" style="margin-left: 10px; font-weight: bold; color: #00ff00; display: none;">FPS: 0</div>
+                    
+                    <!-- Info icon for controls help -->
+                    <button id="controlsInfoBtn" class="info-icon-btn" title="Show controls help" style="margin-left: auto;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </button>
                 </div>
                 <div class="legend">
                     <div class="legend-item">
@@ -161,10 +180,68 @@
                         <span class="legend-color" style="background-color: #0000FF;"></span>
                         <span>Depth</span>
                     </div>
-                    <div class="legend-help">
-                        <span>💡 Drag to rotate • Scroll to zoom • Right-drag to pan</span>
+                    <div class="legend-help" id="webglWarning">
+                        <span style="color: #ff9800;">⚠️ WebGL not supported. Using fallback mode.</span>
                     </div>
                 </div>
+                
+                <!-- Controls Help Modal -->
+                <div id="controlsModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Visualization Controls</h3>
+                            <button class="modal-close" id="closeControlsModal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="controls-section">
+                                <h4>🖱️ Mouse Controls</h4>
+                                <ul>
+                                    <li><strong>Left-click + Drag:</strong> Rotate camera around hull</li>
+                                    <li><strong>Scroll Wheel:</strong> Zoom in/out</li>
+                                    <li><strong>Right-click + Drag:</strong> Pan camera</li>
+                                </ul>
+                            </div>
+                            <div class="controls-section">
+                                <h4>⌨️ Keyboard Shortcuts</h4>
+                                <div class="shortcuts-grid">
+                                    <div class="shortcut-item">
+                                        <span class="key">1</span>
+                                        <span class="description">Isometric View</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <span class="key">2</span>
+                                        <span class="description">Side View</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <span class="key">3</span>
+                                        <span class="description">Top View</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <span class="key">4</span>
+                                        <span class="description">Front View</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <span class="key">W</span>
+                                        <span class="description">Toggle Wireframe</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <span class="key">C</span>
+                                        <span class="description">Toggle Curves</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <span class="key">P</span>
+                                        <span class="description">Toggle Profiles</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <span class="key">M</span>
+                                        <span class="description">Toggle Measurements</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div id="loadingOverlay" class="loading-overlay" style="display: none;">
                     <div class="loading-spinner"></div>
                     <div class="loading-text">Generating hull mesh...</div>
